@@ -9,7 +9,6 @@ const GameLobby: React.FC = () => {
   const { setCurrentScreen, gameState, setGameState } = useGame();
   const [playerCount, setPlayerCount] = useState(0);
   const [gorBalance, setGorBalance] = useState(1000);
-  const [dailyReward, setDailyReward] = useState(false);
   const [gameStats, setGameStats] = useState({
     gamesPlayed: 23,
     tokensCollected: 1847,
@@ -63,9 +62,8 @@ const GameLobby: React.FC = () => {
     }
   };
 
-  const claimDailyReward = () => {
-    setGorBalance(prev => prev + 50);
-    setDailyReward(true);
+  const openGorbaganaFaucet = () => {
+    window.open('https://faucet.gorbagana.wtf/', '_blank');
   };
 
   const GameModeCard = ({ title, description, entryFee, reward, icon: Icon, duration, features, onClick }: any) => (
@@ -149,15 +147,13 @@ const GameLobby: React.FC = () => {
                       <Play className="w-6 h-6 inline mr-2" />
                       Quick Match
                     </button>
-                    {!dailyReward && (
-                      <button
-                        onClick={claimDailyReward}
-                        className="px-6 py-4 bg-gradient-to-r from-yellow-500 to-orange-500 text-white rounded-lg font-bold hover:from-yellow-600 hover:to-orange-600 transition-all transform hover:scale-105 shadow-lg"
-                      >
-                        <Gift className="w-5 h-5 inline mr-2" />
-                        Claim Daily +50 GOR
-                      </button>
-                    )}
+                    <button
+                      onClick={openGorbaganaFaucet}
+                      className="px-6 py-4 bg-gradient-to-r from-yellow-500 to-orange-500 text-white rounded-lg font-bold hover:from-yellow-600 hover:to-orange-600 transition-all transform hover:scale-105 shadow-lg"
+                    >
+                      <Gift className="w-5 h-5 inline mr-2" />
+                      Claim Daily +50 GOR
+                    </button>
                   </div>
                 </div>
               )}
