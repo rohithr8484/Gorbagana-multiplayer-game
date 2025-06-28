@@ -15,16 +15,6 @@ interface Token {
   pulse: boolean;
 }
 
-interface Player {
-  id: string;
-  name: string;
-  score: number;
-  avatar: string;
-  streak: number;
-  multiplier: number;
-  shields: number;
-}
-
 interface PowerUp {
   type: 'shield' | 'multiplier' | 'time' | 'magnet';
   duration: number;
@@ -50,7 +40,6 @@ const GameArena: React.FC = () => {
   const [countdown, setCountdown] = useState(3);
   const gameAreaRef = useRef<HTMLDivElement>(null);
   const animationRef = useRef<number>();
-  const tokenGenerationRef = useRef<NodeJS.Timeout>();
 
   // Start game countdown
   useEffect(() => {
@@ -70,12 +59,12 @@ const GameArena: React.FC = () => {
     
     const gameArea = gameAreaRef.current.getBoundingClientRect();
     const tokenTypes = [
-      { value: 1, color: 'bg-yellow-400', type: 'normal', weight: 50, size: 60 }, // Increased from 40 to 60
-      { value: 5, color: 'bg-blue-400', type: 'normal', weight: 30, size: 65 }, // Increased from 45 to 65
-      { value: 10, color: 'bg-purple-400', type: 'bonus', weight: 12, size: 70 }, // Increased from 50 to 70
-      { value: 25, color: 'bg-red-400', type: 'bonus', weight: 5, size: 75 }, // Increased from 55 to 75
-      { value: 0, color: 'bg-green-400', type: 'multiplier', weight: 2, size: 65 }, // Increased from 45 to 65
-      { value: -10, color: 'bg-gray-800', type: 'bomb', weight: 1, size: 60 }, // Increased from 40 to 60
+      { value: 1, color: 'bg-yellow-400', type: 'normal', weight: 50, size: 60 },
+      { value: 5, color: 'bg-blue-400', type: 'normal', weight: 30, size: 65 },
+      { value: 10, color: 'bg-purple-400', type: 'bonus', weight: 12, size: 70 },
+      { value: 25, color: 'bg-red-400', type: 'bonus', weight: 5, size: 75 },
+      { value: 0, color: 'bg-green-400', type: 'multiplier', weight: 2, size: 65 },
+      { value: -10, color: 'bg-gray-800', type: 'bomb', weight: 1, size: 60 },
     ];
     
     const totalWeight = tokenTypes.reduce((sum, type) => sum + type.weight, 0);
@@ -95,7 +84,7 @@ const GameArena: React.FC = () => {
       x: Math.random() * (gameArea.width - selectedType.size),
       y: -selectedType.size,
       value: selectedType.value,
-      speed: Math.random() * 2 + 2, // Slower speed: 2-4 pixels per frame (easier to catch)
+      speed: Math.random() * 1.5 + 1.5, // Speed: 1.5-3 pixels per frame
       color: selectedType.color,
       type: selectedType.type as any,
       size: selectedType.size,
@@ -224,38 +213,16 @@ const GameArena: React.FC = () => {
 
   // Enhanced token updates with rotation - ENSURE TOKENS FALL TO BOTTOM
   const updateTokens = useCallback(() => {
-    if (!gameAreaRef.current) return;
-    
-    const gameAreaHeight = window.innerHeight;
-    
     setTokens(prevTokens => {
       return prevTokens
         .map(token => ({ 
           ...token, 
           y: token.y + token.speed,
-          rotation: token.rotation + (token.pulse ? 5 : 2)
+          rotation: token.rotation + (token.pulse ? 3 : 1)
         }))
-        .filter(token => token.y < gameAreaHeight + 200); // Allow tokens to fall completely off screen
+        .filter(token => token.y < window.innerHeight + 100); // Allow tokens to fall completely off screen
     });
   }, []);
-
-  // Power-up management
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setPowerUps(prev => prev.map(powerUp => ({
-        ...powerUp,
-        duration: powerUp.duration - 1
-      })).filter(powerUp => powerUp.duration > 0));
-      
-      // Reset multiplier when power-up expires
-      const hasMultiplierPowerUp = powerUps.some(p => p.type === 'multiplier' && p.duration > 0);
-      if (!hasMultiplierPowerUp && multiplier > 1) {
-        setMultiplier(1);
-      }
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [powerUps, multiplier]);
 
   // Enhanced particle updates
   const updateParticles = useCallback(() => {
@@ -296,18 +263,12 @@ const GameArena: React.FC = () => {
   useEffect(() => {
     if (!gameActive || !gameStarted) return;
 
-    const baseInterval = Math.max(800, 1200 - (60 - timeLeft) * 8); // Slower: 800-1200ms
-    
-    tokenGenerationRef.current = setInterval(() => {
+    const interval = setInterval(() => {
       generateToken();
-    }, baseInterval);
+    }, 1000); // Generate a token every 1 second
 
-    return () => {
-      if (tokenGenerationRef.current) {
-        clearInterval(tokenGenerationRef.current);
-      }
-    };
-  }, [gameActive, gameStarted, generateToken, timeLeft]);
+    return () => clearInterval(interval);
+  }, [gameActive, gameStarted, generateToken]);
 
   // Timer
   useEffect(() => {
@@ -326,6 +287,24 @@ const GameArena: React.FC = () => {
     return () => clearInterval(timer);
   }, [gameActive, gameStarted]);
 
+  // Power-up management
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setPowerUps(prev => prev.map(powerUp => ({
+        ...powerUp,
+        duration: powerUp.duration - 1
+      })).filter(powerUp => powerUp.duration > 0));
+      
+      // Reset multiplier when power-up expires
+      const hasMultiplierPowerUp = powerUps.some(p => p.type === 'multiplier' && p.duration > 0);
+      if (!hasMultiplierPowerUp && multiplier > 1) {
+        setMultiplier(1);
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [powerUps, multiplier]);
+
   const exitGame = () => {
     setGameActive(false);
     setGameState({ ...gameState, isPlaying: false });
@@ -340,7 +319,7 @@ const GameArena: React.FC = () => {
 
   const getTokenIcon = (type: string) => {
     switch (type) {
-      case 'multiplier': return <Zap className="w-6 h-6" />; // Bigger icons for bigger tokens
+      case 'multiplier': return <Zap className="w-6 h-6" />;
       case 'shield': return <Shield className="w-6 h-6" />;
       case 'time': return <Clock className="w-6 h-6" />;
       case 'bomb': return <Target className="w-6 h-6" />;
@@ -349,7 +328,7 @@ const GameArena: React.FC = () => {
   };
 
   const GameOverModal = () => {
-    const earnedGOR = Math.max(0, score * 2); // Simple GOR calculation
+    const earnedGOR = Math.max(0, score * 2);
     
     return (
       <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
