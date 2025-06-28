@@ -147,7 +147,8 @@ This project is part of the Gorbagana hackathon submission. The game demonstrate
 
 ## 📄 License
 
-This project is submitted for the Gorbagana hackathon and follows the competition guidelines.
+This project is submitted for the Build Multiplayer Mini-Games on Gorbagana Testnet
+by Gorbagana Chain and follows the competition guidelines.
 
 ---
 
