@@ -234,7 +234,7 @@ const GameLobby: React.FC = () => {
                       className="px-6 py-4 bg-gradient-to-r from-yellow-500 to-orange-500 text-white rounded-lg font-bold hover:from-yellow-600 hover:to-orange-600 transition-all transform hover:scale-105 shadow-lg"
                     >
                       <Gift className="w-5 h-5 inline mr-2" />
-                      Claim Daily +50 GOR
+                      Claim GOR
                     </button>
                   </div>
                 </div>

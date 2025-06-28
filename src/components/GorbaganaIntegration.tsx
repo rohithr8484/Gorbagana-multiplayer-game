@@ -138,7 +138,7 @@ const GorbaganaIntegration: React.FC<GorbaganaIntegrationProps> = ({ onClose }) 
             <Zap className="w-8 h-8 text-purple-400" />
             <div>
               <h2 className="text-2xl font-bold text-white">Gorbagana Testnet Integration</h2>
-              <p className="text-gray-300">Connect to Gorbagana's native testnet for GOR token functionality</p>
+              <p className="text-gray-300">Connect to Gorbagana's native testnet for GOR functionality</p>
             </div>
           </div>
           <button
@@ -218,7 +218,7 @@ const GorbaganaIntegration: React.FC<GorbaganaIntegrationProps> = ({ onClose }) 
                     className="px-4 py-2 bg-gradient-to-r from-yellow-500 to-orange-500 text-white rounded-lg font-medium hover:from-yellow-600 hover:to-orange-600 transition-all disabled:opacity-50"
                   >
                     <Gift className="w-4 h-4 inline mr-2" />
-                    Claim Daily +50 GOR
+                    Claim GOR
                   </button>
                 </div>
               )}
