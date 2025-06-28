@@ -1,23 +1,23 @@
-# GOR Rush - Enhanced Multiplayer Token Collection Game
+# GOR Rush - Enhanced Multiplayer Coin Collection Game
 
-A competitive, real-time multiplayer mini-game built on Gorbagana's Solana-based infrastructure. Players compete to collect falling GOR tokens in fast-paced battles with advanced gameplay mechanics, power-ups, and comprehensive reward systems.
+A competitive, real-time multiplayer mini-game built on Gorbagana's Solana-based infrastructure. Players compete to collect falling GOR coins in fast-paced battles with advanced gameplay mechanics, power-ups, and comprehensive reward systems.
 
 ## 🎮 Enhanced Game Features
 
 ### Core Gameplay Mechanics
-- **Advanced Token Collection**: Multiple token types with unique properties and values
+- **Advanced Coin Collection**: Multiple coin types with unique properties and values
 - **Power-Up System**: Multipliers, shields, time extensions, and special abilities
 - **Streak Mechanics**: Build combos for massive score multipliers
 - **Dynamic Difficulty**: Game speed and complexity increase over time
 - **Anti-Cheat Protection**: Server-side validation and realistic score limits
 
-### Token Types & Strategy
-- **Basic Tokens** (1 GOR): Yellow tokens for steady scoring
-- **Bonus Tokens** (5-25 GOR): Blue, purple, and red high-value tokens
-- **Multiplier Tokens**: Green tokens that boost earning potential
-- **Shield Tokens**: Cyan tokens providing protection from bombs
-- **Time Tokens**: Orange tokens extending game duration
-- **Bomb Tokens**: Gray tokens that reset streaks and multipliers
+### Coin Types & Strategy
+- **Basic Coins** (1 GOR): Yellow coins for steady scoring
+- **Bonus Coins** (5-25 GOR): Blue, purple, and red high-value coins
+- **Multiplier Coins**: Green coins that boost earning potential
+- **Shield Coins**: Cyan coins providing protection from bombs
+- **Time Coins**: Orange coins extending game duration
+- **Bomb Coins**: Gray coins that reset streaks and multipliers
 
 ### Enhanced Multiplayer Features
 - **Real-time Competition**: Live player rankings and score updates
@@ -30,11 +30,11 @@ A competitive, real-time multiplayer mini-game built on Gorbagana's Solana-based
 
 ### Enhanced Testnet Features
 - **Network**: Solana Testnet with optimized RPC endpoints
-- **Token**: GOR (Gorbagana native test token) with real utility
+- **Coin**: GOR (Gorbagana native test coin) with real utility
 - **Wallet**: Backpack Wallet with seamless integration
 - **Smart Contracts**: Automated reward distribution and validation
 
-### Comprehensive Token Economy
+### Comprehensive Coin Economy
 - **Entry Fees**: Tiered pricing for different game modes
 - **Performance Rewards**: Dynamic payouts based on score and rank
 - **Achievement Bonuses**: Additional GOR for milestone completions
@@ -53,7 +53,7 @@ A competitive, real-time multiplayer mini-game built on Gorbagana's Solana-based
 ### Advanced Gameplay Systems
 - **Combo System**: Chain collections for exponential score growth
 - **Power-Up Management**: Strategic use of temporary abilities
-- **Shield Protection**: Defensive mechanics against negative tokens
+- **Shield Protection**: Defensive mechanics against negative coins
 - **Streak Tracking**: Visual feedback for consecutive collections
 - **Particle Effects**: Enhanced visual feedback for all interactions
 
@@ -118,7 +118,7 @@ npm run dev
 2. **Switch to Testnet**: Configure wallet for Solana Testnet
 3. **Get Test SOL**: Use Solana testnet faucet for transaction fees
 4. **Connect Wallet**: Click "Connect Wallet" in the game interface
-5. **Claim Daily Bonus**: Get your first 50 GOR tokens
+5. **Claim Daily Bonus**: Get your first 50 GOR coins
 6. **Start Playing**: Choose a game mode and begin collecting!
 
 ## 🎯 Game Modes & Strategy
@@ -141,9 +141,9 @@ npm run dev
 ## 🏆 Advanced Scoring & Rewards
 
 ### Scoring Mechanics
-- **Base Points**: Token values (1, 5, 10, 25 GOR)
+- **Base Points**: Coin values (1, 5, 10, 25 GOR)
 - **Streak Multipliers**: 1.5x at 5 streak, 2x at 10 streak, 3x at 15+ streak
-- **Power-Up Bonuses**: Multiplier tokens stack for massive gains
+- **Power-Up Bonuses**: Multiplier coins stack for massive gains
 - **Combo Rewards**: Additional points for rapid collections
 
 ### Achievement System
@@ -180,12 +180,12 @@ npm run dev
 ### Testing Instructions
 1. Visit the demo URL
 2. Connect your Backpack wallet (ensure testnet mode)
-3. Claim daily bonus for starting GOR tokens
+3. Claim daily bonus for starting GOR coins
 4. Try different game modes to experience all features
 5. Check leaderboards and achievement progress
 
 ### Test Scenarios
-- **Basic Gameplay**: Collect tokens and build streaks
+- **Basic Gameplay**: Collect coins and build streaks
 - **Power-Up Usage**: Experiment with multipliers and shields
 - **Tournament Participation**: Join scheduled competitive events
 - **Achievement Hunting**: Complete various challenges
@@ -239,10 +239,10 @@ npm run dev
 
 ## 📄 License & Attribution
 
-This project is submitted for the **Build Multiplayer Mini-Games on Gorbagana Testnet** competition by Gorbagana Chain. The game demonstrates innovative use of blockchain technology for gaming, comprehensive token economics, and exceptional user experience design.
+This project is submitted for the **Build Multiplayer Mini-Games on Gorbagana Testnet** competition by Gorbagana Chain. The game demonstrates innovative use of blockchain technology for gaming, comprehensive coin economics, and exceptional user experience design.
 
 ### Key Innovations
-- **Advanced Gameplay**: Multi-layered token collection with strategic depth
+- **Advanced Gameplay**: Multi-layered coin collection with strategic depth
 - **Comprehensive Economy**: Balanced reward systems encouraging engagement
 - **Technical Excellence**: Production-ready code with security focus
 - **User Experience**: Intuitive design with professional polish

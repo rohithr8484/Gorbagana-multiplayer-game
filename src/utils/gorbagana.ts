@@ -9,9 +9,9 @@ export interface GorbaganaConfig {
 
 export interface GameTransaction {
   id: string;
-  type: 'entry_fee' | 'reward' | 'token_purchase' | 'tournament_entry' | 'achievement_reward';
+  type: 'entry_fee' | 'reward' | 'coin_purchase' | 'tournament_entry' | 'achievement_reward';
   amount: number;
-  token: 'GOR';
+  coin: 'GOR';
   status: 'pending' | 'confirmed' | 'failed';
   timestamp: Date;
   gameMode?: string;
@@ -23,7 +23,7 @@ export interface PlayerProfile {
   username: string;
   gorBalance: number;
   gamesPlayed: number;
-  totalTokensCollected: number;
+  totalCoinsCollected: number;
   highScore: number;
   rank: number;
   winRate: number;
@@ -38,7 +38,7 @@ export interface PlayerProfile {
 export interface GameResult {
   playerId: string;
   score: number;
-  tokensCollected: number;
+  coinsCollected: number;
   gameMode: string;
   duration: number;
   multiplierUsed: number;
@@ -144,7 +144,7 @@ class GorbaganaSDK {
       {
         id: 'gor_collector',
         name: 'GOR Collector',
-        description: 'Earn 1000 GOR tokens',
+        description: 'Earn 1000 GOR coins',
         icon: '💰',
         reward: 200,
         requirement: { totalEarned: 1000 },
@@ -169,7 +169,7 @@ class GorbaganaSDK {
       username: `Player_${walletAddress.slice(0, 8)}`,
       gorBalance: 1000 + Math.floor(Math.random() * 2000),
       gamesPlayed: Math.floor(Math.random() * 100),
-      totalTokensCollected: Math.floor(Math.random() * 10000),
+      totalCoinsCollected: Math.floor(Math.random() * 10000),
       highScore: Math.floor(Math.random() * 500) + 100,
       rank: Math.floor(Math.random() * 1000) + 1,
       winRate: Math.floor(Math.random() * 40) + 40, // 40-80%
@@ -212,7 +212,7 @@ class GorbaganaSDK {
       id: `tx_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       type: 'entry_fee',
       amount,
-      token: 'GOR',
+      coin: 'GOR',
       status: 'pending',
       timestamp: new Date(),
       gameMode,
@@ -256,7 +256,7 @@ class GorbaganaSDK {
       id: `reward_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       type: 'reward',
       amount: gorEarned,
-      token: 'GOR',
+      coin: 'GOR',
       status: 'confirmed',
       timestamp: new Date(),
       gameMode: gameResult.gameMode,
@@ -348,7 +348,7 @@ class GorbaganaSDK {
         id: `reward_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         type: 'reward',
         amount: player.reward,
-        token: 'GOR',
+        coin: 'GOR',
         status: 'confirmed',
         timestamp: new Date(),
         metadata: { rank: player.rank }
@@ -376,7 +376,7 @@ class GorbaganaSDK {
     // Enhanced anti-cheat validation
     const maxPossibleScore = gameData.duration * 10; // Rough estimate
     const isScoreRealistic = gameData.score <= maxPossibleScore;
-    const isStreakRealistic = gameData.streakAchieved <= gameData.tokensCollected;
+    const isStreakRealistic = gameData.streakAchieved <= gameData.coinsCollected;
     const isTimeRealistic = gameData.duration > 0 && gameData.duration <= 600; // Max 10 minutes
 
     return isScoreRealistic && isStreakRealistic && isTimeRealistic;
@@ -390,7 +390,7 @@ class GorbaganaSDK {
       id: `daily_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       type: 'reward',
       amount: rewardAmount,
-      token: 'GOR',
+      coin: 'GOR',
       status: 'confirmed',
       timestamp: new Date(),
       metadata: { type: 'daily_reward' }
