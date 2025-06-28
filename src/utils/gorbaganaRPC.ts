@@ -102,39 +102,27 @@ export class GorbaganaRPC {
     }
   }
 
-  // Pay entry fee in GOR tokens
+  // Pay entry fee in GOR tokens (simulated for testnet)
   async payEntryFee(gameMode: 'blitz' | 'endurance' | 'tournament'): Promise<GorbaganaTransaction> {
     try {
-      if (!this.wallet.publicKey || !this.wallet.signTransaction) {
-        throw new Error('Wallet not connected or cannot sign transactions');
+      if (!this.wallet.publicKey) {
+        throw new Error('Wallet not connected');
       }
 
       const entryFee = ENTRY_FEES[gameMode];
       
-      // Create transaction for entry fee payment
-      // In a real implementation, this would transfer GOR tokens to the game treasury
-      const transaction = new Transaction().add(
-        SystemProgram.transfer({
-          fromPubkey: this.wallet.publicKey,
-          toPubkey: new PublicKey(GORBAGANA_CONFIG.GAME_TREASURY),
-          lamports: entryFee * LAMPORTS_PER_SOL / 1000, // Convert GOR to lamports equivalent
-        })
-      );
-
-      // Get recent blockhash
-      const { blockhash } = await this.connection.getLatestBlockhash();
-      transaction.recentBlockhash = blockhash;
-      transaction.feePayer = this.wallet.publicKey;
-
-      // Sign and send transaction
-      const signedTransaction = await this.wallet.signTransaction(transaction);
-      const signature = await this.connection.sendRawTransaction(signedTransaction.serialize());
-
-      // Confirm transaction
-      await this.connection.confirmTransaction(signature);
+      // Simulate entry fee payment for testnet environment
+      // This prevents actual Solana transactions that would fail with invalid treasury address
+      console.log(`Simulating entry fee payment: ${entryFee} GOR for ${gameMode} mode`);
+      
+      // Add a small delay to simulate transaction processing
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Generate a mock transaction signature
+      const mockSignature = `entry_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
       return {
-        signature,
+        signature: mockSignature,
         type: 'entry_fee',
         amount: entryFee,
         status: 'confirmed',
