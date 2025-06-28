@@ -172,17 +172,6 @@ npm run dev
 - **Balance Protection**: Real-time balance verification
 - **Error Handling**: Robust transaction failure recovery
 
-## 📊 Live Demo & Testing
-
-### Demo Access
-🌐 **Live Demo**: https://beamish-parfait-2e07b2.netlify.app
-
-### Testing Instructions
-1. Visit the demo URL
-2. Connect your Backpack wallet (ensure testnet mode)
-3. Claim daily bonus for starting GOR coins
-4. Try different game modes to experience all features
-5. Check leaderboards and achievement progress
 
 ### Test Scenarios
 - **Basic Gameplay**: Collect coins and build streaks
