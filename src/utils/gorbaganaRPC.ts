@@ -3,7 +3,7 @@ import { WalletContextState } from '@solana/wallet-adapter-react';
 
 // Gorbagana Testnet Configuration
 export const GORBAGANA_CONFIG = {
-  RPC_ENDPOINT: 'https://testnet-rpc.gorbagana.com', // Gorbagana's testnet RPC
+  RPC_ENDPOINT: 'https://api.testnet.solana.com', // Updated to use valid Solana testnet RPC
   NETWORK: 'testnet',
   GOR_TOKEN_MINT: 'GORTokenMintAddressHere', // Replace with actual GOR token mint address
   GAME_TREASURY: 'GameTreasuryAddressHere', // Replace with actual treasury address
