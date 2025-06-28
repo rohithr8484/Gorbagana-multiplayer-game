@@ -226,8 +226,8 @@ const GameLobby: React.FC = () => {
             </div>
           )}
 
-          {/* Welcome Section */}
-          <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-xl p-8">
+          {/* Welcome Section - Moved down with additional margin */}
+          <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-xl p-8 mt-16">
             <div className="text-center">
               <h2 className="text-4xl font-bold text-white mb-4">
                 Welcome to <span className="bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent">GOR Rush</span>
