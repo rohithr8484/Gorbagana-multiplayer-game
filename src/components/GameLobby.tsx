@@ -78,32 +78,43 @@ const GameLobby: React.FC = () => {
     }
   };
 
-  const startGame = async (mode: string) => {
-    if (connected && gorbaganaRPC) {
+  const startGame = async (mode: string, isFree: boolean = false) => {
+    if (connected) {
       const gameMode = mode as 'blitz' | 'endurance' | 'tournament';
-      const entryFee = getEntryFee(gameMode);
       
-      // Check if player has enough GOR
-      if (gorBalance < entryFee) {
-        alert(`Insufficient GOR balance. You need ${formatGOR(entryFee)} to play this mode.`);
+      // For free games (Quick Match), skip entry fee processing
+      if (isFree) {
+        setGameState({ ...gameState, isPlaying: true, gameMode: gameMode as any });
+        setCurrentScreen('game');
         return;
       }
 
-      try {
-        // Pay entry fee
-        const transaction = await gorbaganaRPC.payEntryFee(gameMode);
+      // For paid games, process entry fee
+      if (gorbaganaRPC) {
+        const entryFee = getEntryFee(gameMode);
         
-        if (transaction.status === 'confirmed') {
-          // Update balance and start game
-          await loadGORBalance(gorbaganaRPC);
-          setGameState({ ...gameState, isPlaying: true, gameMode: gameMode as any });
-          setCurrentScreen('game');
-        } else {
-          alert('Failed to process entry fee. Please try again.');
+        // Check if player has enough GOR
+        if (gorBalance < entryFee) {
+          alert(`Insufficient GOR balance. You need ${formatGOR(entryFee)} to play this mode.`);
+          return;
         }
-      } catch (error) {
-        console.error('Failed to start game:', error);
-        alert('Failed to start game. Please try again.');
+
+        try {
+          // Pay entry fee
+          const transaction = await gorbaganaRPC.payEntryFee(gameMode);
+          
+          if (transaction.status === 'confirmed') {
+            // Update balance and start game
+            await loadGORBalance(gorbaganaRPC);
+            setGameState({ ...gameState, isPlaying: true, gameMode: gameMode as any });
+            setCurrentScreen('game');
+          } else {
+            alert('Failed to process entry fee. Please try again.');
+          }
+        } catch (error) {
+          console.error('Failed to start game:', error);
+          alert('Failed to start game. Please try again.');
+        }
       }
     }
   };
@@ -112,8 +123,8 @@ const GameLobby: React.FC = () => {
     window.open('https://faucet.gorbagana.wtf/', '_blank');
   };
 
-  const GameModeCard = ({ title, description, entryFee, reward, icon: Icon, duration, features, onClick, gameMode }: any) => {
-    const canAfford = gorBalance >= entryFee;
+  const GameModeCard = ({ title, description, entryFee, reward, icon: Icon, duration, features, onClick, gameMode, isFree = false }: any) => {
+    const canAfford = isFree || gorBalance >= entryFee;
     const rewardRange = estimateRewards(gameMode);
     
     return (
@@ -135,8 +146,8 @@ const GameLobby: React.FC = () => {
             </div>
           </div>
           <div className="text-right">
-            <div className={`text-sm ${canAfford ? 'text-red-400' : 'text-red-500 font-bold'}`}>
-              Entry: {formatGOR(entryFee)}
+            <div className={`text-sm ${isFree ? 'text-green-400 font-bold' : canAfford ? 'text-red-400' : 'text-red-500 font-bold'}`}>
+              {isFree ? 'FREE' : `Entry: ${formatGOR(entryFee)}`}
             </div>
             <div className="text-green-400 text-sm">
               Rewards: {formatGOR(rewardRange.min)}-{formatGOR(rewardRange.max)}
@@ -205,11 +216,11 @@ const GameLobby: React.FC = () => {
                   </div>
                   <div className="flex justify-center space-x-4">
                     <button
-                      onClick={() => startGame('blitz')}
+                      onClick={() => startGame('blitz', true)} // Make Quick Match free
                       className="px-8 py-4 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-lg font-bold text-lg hover:from-green-600 hover:to-emerald-600 transition-all transform hover:scale-105 shadow-lg"
                     >
                       <Play className="w-6 h-6 inline mr-2" />
-                      Quick Match
+                      Quick Match (FREE)
                     </button>
                     <button
                       onClick={() => setShowGorbaganaModal(true)}
@@ -246,8 +257,9 @@ const GameLobby: React.FC = () => {
               reward={50}
               icon={Zap}
               gameMode="blitz"
-              features={['Power-ups', 'Multipliers', 'Streak bonuses']}
-              onClick={connected ? () => startGame('blitz') : undefined}
+              isFree={true}
+              features={['Power-ups', 'Multipliers', 'Streak bonuses', 'FREE TO PLAY']}
+              onClick={() => startGame('blitz', true)}
             />
             
             <GameModeCard
