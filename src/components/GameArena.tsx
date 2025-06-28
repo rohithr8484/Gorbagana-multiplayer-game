@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useGame } from '../contexts/GameContext';
-import { Coins, Users, Clock, Trophy, ArrowLeft, Zap, Star, Shield, Target } from 'lucide-react';
+import { Coins, Clock, ArrowLeft, Zap, Star, Shield, Target } from 'lucide-react';
 
 interface Token {
   id: string;
@@ -45,9 +45,6 @@ const GameArena: React.FC = () => {
   const [comboText, setComboText] = useState<string>('');
   const [players, setPlayers] = useState<Player[]>([
     { id: '1', name: 'You', score: 0, avatar: '🎮', streak: 0, multiplier: 1, shields: 0 },
-    { id: '2', name: 'TokenHunter', score: 0, avatar: '🚀', streak: 0, multiplier: 1, shields: 0 },
-    { id: '3', name: 'GORMaster', score: 0, avatar: '⚡', streak: 0, multiplier: 1, shields: 0 },
-    { id: '4', name: 'CoinRush', score: 0, avatar: '🔥', streak: 0, multiplier: 1, shields: 0 },
   ]);
   const [particles, setParticles] = useState<any[]>([]);
   const [achievements, setAchievements] = useState<string[]>([]);
@@ -239,7 +236,7 @@ const GameArena: React.FC = () => {
     }
   };
 
-  // Enhanced token updates with rotation and AI opponents
+  // Enhanced token updates with rotation
   const updateTokens = useCallback(() => {
     if (!gameAreaRef.current) return;
     
@@ -254,24 +251,6 @@ const GameArena: React.FC = () => {
         }))
         .filter(token => token.y < gameAreaHeight + 100); // Allow tokens to fall completely off screen
     });
-
-    // Enhanced AI opponent behavior
-    setPlayers(prev => prev.map(player => {
-      if (player.id !== '1') {
-        // Simulate more realistic AI behavior
-        const baseIncrease = Math.random() < 0.12 ? Math.floor(Math.random() * 8) + 1 : 0;
-        const streakBonus = player.streak > 5 ? Math.floor(baseIncrease * 1.5) : baseIncrease;
-        const multiplierBonus = Math.floor(streakBonus * player.multiplier);
-        
-        return { 
-          ...player, 
-          score: player.score + multiplierBonus,
-          streak: baseIncrease > 0 ? player.streak + 1 : Math.max(0, player.streak - 1),
-          multiplier: Math.random() < 0.05 ? Math.min(player.multiplier + 1, 4) : Math.max(1, player.multiplier - 0.1)
-        };
-      }
-      return player; // Return current player data unchanged since we update it in handleTokenClick
-    }));
   }, []);
 
   // Power-up management
@@ -401,21 +380,19 @@ const GameArena: React.FC = () => {
   };
 
   const GameOverModal = () => {
-    const finalRank = players.sort((a, b) => b.score - a.score).findIndex(p => p.id === '1') + 1;
-    const earnedGOR = Math.max(0, 100 - (finalRank - 1) * 20);
+    const earnedGOR = Math.max(0, score * 2); // Simple GOR calculation
     
     return (
       <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
         <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-8 max-w-md w-full mx-4">
           <div className="text-center">
-            <Trophy className="w-16 h-16 text-yellow-400 mx-auto mb-4" />
+            <Coins className="w-16 h-16 text-yellow-400 mx-auto mb-4" />
             <h2 className="text-3xl font-bold text-white mb-4">Game Over!</h2>
             <div className="space-y-3 mb-6">
               <p className="text-2xl text-yellow-400 font-bold">Final Score: {score}</p>
               <p className="text-green-400 font-bold">GOR Earned: +{earnedGOR}</p>
-              <p className="text-gray-300">Best Streak: {Math.max(...players.map(p => p.streak))}</p>
-              <p className="text-gray-300">Max Multiplier: x{Math.max(...players.map(p => p.multiplier))}</p>
-              <p className="text-gray-300">Rank: #{finalRank} of {players.length}</p>
+              <p className="text-gray-300">Best Streak: {streak}</p>
+              <p className="text-gray-300">Max Multiplier: x{multiplier}</p>
               
               {achievements.length > 0 && (
                 <div className="mt-4 p-3 bg-purple-600/20 rounded-lg">
@@ -474,10 +451,6 @@ const GameArena: React.FC = () => {
               {countdown}
             </div>
             <p className="text-2xl text-gray-300">Get Ready!</p>
-            <div className="mt-8 text-lg text-gray-400">
-              <p>Click the falling GOR tokens to collect them!</p>
-              <p className="text-sm mt-2 text-yellow-400">More tokens = Higher scores!</p>
-            </div>
           </div>
         </div>
       )}
@@ -520,10 +493,6 @@ const GameArena: React.FC = () => {
                 <span>{shields}</span>
               </div>
             )}
-            <div className="flex items-center space-x-2 text-white">
-              <Users className="w-5 h-5 text-green-400" />
-              <span>{players.length}</span>
-            </div>
           </div>
         </div>
       </div>
@@ -551,42 +520,6 @@ const GameArena: React.FC = () => {
           </div>
         </div>
       )}
-
-      {/* Enhanced Leaderboard Sidebar */}
-      <div className="absolute top-20 right-4 z-20 bg-black/20 backdrop-blur-md border border-white/20 rounded-xl p-4 w-64">
-        <h3 className="text-white font-bold mb-3 flex items-center">
-          <Trophy className="w-4 h-4 mr-2 text-yellow-400" />
-          Live Rankings
-        </h3>
-        <div className="space-y-2">
-          {players
-            .sort((a, b) => b.score - a.score)
-            .map((player, index) => (
-              <div
-                key={player.id}
-                className={`flex items-center justify-between p-2 rounded-lg ${
-                  player.id === '1' ? 'bg-purple-600/30' : 'bg-white/5'
-                }`}
-              >
-                <div className="flex items-center space-x-2">
-                  <span className="text-lg">{player.avatar}</span>
-                  <div>
-                    <span className={`text-sm ${player.id === '1' ? 'text-white font-bold' : 'text-gray-300'}`}>
-                      {player.name}
-                    </span>
-                    {player.streak > 0 && (
-                      <div className="text-xs text-orange-400">🔥{player.streak}</div>
-                    )}
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="text-yellow-400 font-bold">{player.score}</div>
-                  <div className="text-xs text-gray-400">#{index + 1}</div>
-                </div>
-              </div>
-            ))}
-        </div>
-      </div>
 
       {/* Game Area */}
       <div
@@ -635,39 +568,6 @@ const GameArena: React.FC = () => {
             {particle.value > 0 ? `+${particle.value}` : particle.type === 'bomb' ? '💥' : '✨'}
           </div>
         ))}
-
-        {/* Game Instructions */}
-        {gameActive && gameStarted && tokens.length === 0 && (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="text-center text-white">
-              <Coins className="w-16 h-16 text-yellow-400 mx-auto mb-4 animate-bounce" />
-              <h2 className="text-3xl font-bold mb-2">Tokens incoming!</h2>
-              <p className="text-xl text-gray-300 mb-4">Click the falling GOR tokens to collect them!</p>
-              <div className="grid grid-cols-2 gap-4 text-sm text-gray-300 max-w-md">
-                <div className="flex items-center space-x-2">
-                  <div className="w-6 h-6 bg-yellow-400 rounded-full flex items-center justify-center text-xs">1</div>
-                  <span>Normal tokens</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <div className="w-6 h-6 bg-purple-400 rounded-full flex items-center justify-center text-xs">10</div>
-                  <span>Bonus tokens</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <div className="w-6 h-6 bg-green-400 rounded-full flex items-center justify-center">
-                    <Zap className="w-3 h-3" />
-                  </div>
-                  <span>Multiplier boost</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <div className="w-6 h-6 bg-gray-800 rounded-full flex items-center justify-center">
-                    <Target className="w-3 h-3" />
-                  </div>
-                  <span>Avoid bombs!</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Game Over Modal */}
