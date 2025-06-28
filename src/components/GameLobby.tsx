@@ -2,13 +2,18 @@ import React, { useState, useEffect } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import { useGame } from '../contexts/GameContext';
-import { Play, Users, Coins, Zap, Trophy, Clock, Star, Shield, Target, TrendingUp, Gift } from 'lucide-react';
+import { Play, Users, Coins, Zap, Trophy, Clock, Star, Shield, Target, TrendingUp, Gift, ExternalLink } from 'lucide-react';
+import GorbaganaIntegration from './GorbaganaIntegration';
+import { GorbaganaRPC, getEntryFee, estimateRewards, formatGOR } from '../utils/gorbaganaRPC';
 
 const GameLobby: React.FC = () => {
   const { connected, publicKey } = useWallet();
+  const wallet = useWallet();
   const { setCurrentScreen, gameState, setGameState } = useGame();
   const [playerCount, setPlayerCount] = useState(0);
   const [gorBalance, setGorBalance] = useState(1000);
+  const [showGorbaganaModal, setShowGorbaganaModal] = useState(false);
+  const [gorbaganaRPC, setGorbaganaRPC] = useState<GorbaganaRPC | null>(null);
   const [gameStats, setGameStats] = useState({
     gamesPlayed: 23,
     coinsCollected: 1847,
@@ -23,6 +28,15 @@ const GameLobby: React.FC = () => {
     { id: 3, text: 'Daily bonus: +50 GOR available!', type: 'bonus', time: '5m ago' },
     { id: 4, text: 'GORCollector achieved 20x streak!', type: 'achievement', time: '8m ago' },
   ]);
+
+  useEffect(() => {
+    // Initialize Gorbagana RPC when wallet connects
+    if (connected && publicKey) {
+      const rpc = new GorbaganaRPC(wallet);
+      setGorbaganaRPC(rpc);
+      loadGORBalance(rpc);
+    }
+  }, [connected, publicKey, wallet]);
 
   useEffect(() => {
     // Simulate real-time player count updates
@@ -55,10 +69,42 @@ const GameLobby: React.FC = () => {
     };
   }, []);
 
-  const startGame = (mode: string) => {
-    if (connected) {
-      setGameState({ ...gameState, isPlaying: true, gameMode: mode as any });
-      setCurrentScreen('game');
+  const loadGORBalance = async (rpc: GorbaganaRPC) => {
+    try {
+      const balance = await rpc.getGORBalance();
+      setGorBalance(balance.balance);
+    } catch (error) {
+      console.error('Failed to load GOR balance:', error);
+    }
+  };
+
+  const startGame = async (mode: string) => {
+    if (connected && gorbaganaRPC) {
+      const gameMode = mode as 'blitz' | 'endurance' | 'tournament';
+      const entryFee = getEntryFee(gameMode);
+      
+      // Check if player has enough GOR
+      if (gorBalance < entryFee) {
+        alert(`Insufficient GOR balance. You need ${formatGOR(entryFee)} to play this mode.`);
+        return;
+      }
+
+      try {
+        // Pay entry fee
+        const transaction = await gorbaganaRPC.payEntryFee(gameMode);
+        
+        if (transaction.status === 'confirmed') {
+          // Update balance and start game
+          await loadGORBalance(gorbaganaRPC);
+          setGameState({ ...gameState, isPlaying: true, gameMode: gameMode as any });
+          setCurrentScreen('game');
+        } else {
+          alert('Failed to process entry fee. Please try again.');
+        }
+      } catch (error) {
+        console.error('Failed to start game:', error);
+        alert('Failed to start game. Please try again.');
+      }
     }
   };
 
@@ -66,49 +112,67 @@ const GameLobby: React.FC = () => {
     window.open('https://faucet.gorbagana.wtf/', '_blank');
   };
 
-  const GameModeCard = ({ title, description, entryFee, reward, icon: Icon, duration, features, onClick }: any) => (
-    <div 
-      className="bg-white/5 backdrop-blur-md border border-white/10 rounded-xl p-6 hover:bg-white/10 transition-all cursor-pointer group transform hover:scale-105"
-      onClick={onClick}
-    >
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center space-x-3">
-          <div className="p-3 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg group-hover:from-purple-400 group-hover:to-blue-400 transition-all">
-            <Icon className="w-6 h-6 text-white" />
+  const GameModeCard = ({ title, description, entryFee, reward, icon: Icon, duration, features, onClick, gameMode }: any) => {
+    const canAfford = gorBalance >= entryFee;
+    const rewardRange = estimateRewards(gameMode);
+    
+    return (
+      <div 
+        className={`bg-white/5 backdrop-blur-md border border-white/10 rounded-xl p-6 hover:bg-white/10 transition-all cursor-pointer group transform hover:scale-105 ${
+          !canAfford ? 'opacity-60' : ''
+        }`}
+        onClick={canAfford ? onClick : undefined}
+      >
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center space-x-3">
+            <div className="p-3 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg group-hover:from-purple-400 group-hover:to-blue-400 transition-all">
+              <Icon className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h3 className="text-xl font-bold text-white">{title}</h3>
+              <p className="text-gray-300 text-sm">{description}</p>
+              <p className="text-blue-400 text-xs">{duration}</p>
+            </div>
           </div>
-          <div>
-            <h3 className="text-xl font-bold text-white">{title}</h3>
-            <p className="text-gray-300 text-sm">{description}</p>
-            <p className="text-blue-400 text-xs">{duration}</p>
+          <div className="text-right">
+            <div className={`text-sm ${canAfford ? 'text-red-400' : 'text-red-500 font-bold'}`}>
+              Entry: {formatGOR(entryFee)}
+            </div>
+            <div className="text-green-400 text-sm">
+              Rewards: {formatGOR(rewardRange.min)}-{formatGOR(rewardRange.max)}
+            </div>
           </div>
         </div>
-        <div className="text-right">
-          <div className="text-red-400 text-sm">Entry: {entryFee} GOR</div>
-          <div className="text-green-400 text-sm">Reward: {reward} GOR</div>
+        
+        <div className="mb-4">
+          <div className="flex flex-wrap gap-2">
+            {features.map((feature: string, index: number) => (
+              <span key={index} className="px-2 py-1 bg-purple-600/20 text-purple-300 text-xs rounded-full">
+                {feature}
+              </span>
+            ))}
+          </div>
+        </div>
+        
+        <div className="flex justify-between items-center">
+          <span className="text-gray-400 text-sm flex items-center">
+            <Users className="w-4 h-4 mr-1" />
+            {playerCount + Math.floor(Math.random() * 20)} playing
+          </span>
+          <button 
+            className={`px-4 py-2 rounded-lg font-medium transition-all group-hover:scale-105 ${
+              canAfford 
+                ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:from-purple-700 hover:to-blue-700' 
+                : 'bg-gray-600 text-gray-300 cursor-not-allowed'
+            }`}
+            disabled={!canAfford}
+          >
+            {canAfford ? 'Join Game' : 'Insufficient GOR'}
+          </button>
         </div>
       </div>
-      
-      <div className="mb-4">
-        <div className="flex flex-wrap gap-2">
-          {features.map((feature: string, index: number) => (
-            <span key={index} className="px-2 py-1 bg-purple-600/20 text-purple-300 text-xs rounded-full">
-              {feature}
-            </span>
-          ))}
-        </div>
-      </div>
-      
-      <div className="flex justify-between items-center">
-        <span className="text-gray-400 text-sm flex items-center">
-          <Users className="w-4 h-4 mr-1" />
-          {playerCount + Math.floor(Math.random() * 20)} playing
-        </span>
-        <button className="px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg font-medium hover:from-purple-700 hover:to-blue-700 transition-all group-hover:scale-105">
-          Join Game
-        </button>
-      </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <div className="max-w-7xl mx-auto p-6">
@@ -148,6 +212,13 @@ const GameLobby: React.FC = () => {
                       Quick Match
                     </button>
                     <button
+                      onClick={() => setShowGorbaganaModal(true)}
+                      className="px-6 py-4 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-lg font-bold hover:from-purple-600 hover:to-blue-600 transition-all transform hover:scale-105 shadow-lg"
+                    >
+                      <Zap className="w-5 h-5 inline mr-2" />
+                      Gorbagana Testnet
+                    </button>
+                    <button
                       onClick={openGorbaganaFaucet}
                       className="px-6 py-4 bg-gradient-to-r from-yellow-500 to-orange-500 text-white rounded-lg font-bold hover:from-yellow-600 hover:to-orange-600 transition-all transform hover:scale-105 shadow-lg"
                     >
@@ -174,6 +245,7 @@ const GameLobby: React.FC = () => {
               entryFee={10}
               reward={50}
               icon={Zap}
+              gameMode="blitz"
               features={['Power-ups', 'Multipliers', 'Streak bonuses']}
               onClick={connected ? () => startGame('blitz') : undefined}
             />
@@ -185,6 +257,7 @@ const GameLobby: React.FC = () => {
               entryFee={25}
               reward={150}
               icon={Clock}
+              gameMode="endurance"
               features={['Scaling difficulty', 'Special coins', 'Shield protection']}
               onClick={connected ? () => startGame('endurance') : undefined}
             />
@@ -196,6 +269,7 @@ const GameLobby: React.FC = () => {
               entryFee={50}
               reward={500}
               icon={Trophy}
+              gameMode="tournament"
               features={['Elimination rounds', 'Live spectating', 'Champion rewards']}
               onClick={connected ? () => startGame('tournament') : undefined}
             />
@@ -248,7 +322,7 @@ const GameLobby: React.FC = () => {
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
                   <span className="text-gray-300">GOR Balance</span>
-                  <span className="text-yellow-400 font-bold text-lg">{gorBalance.toLocaleString()}</span>
+                  <span className="text-yellow-400 font-bold text-lg">{formatGOR(gorBalance)}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-gray-300">Games Played</span>
@@ -264,7 +338,7 @@ const GameLobby: React.FC = () => {
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-gray-300">Total Earned</span>
-                  <span className="text-orange-400 font-bold">{gameStats.totalEarned} GOR</span>
+                  <span className="text-orange-400 font-bold">{formatGOR(gameStats.totalEarned)}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-gray-300">Global Rank</span>
@@ -352,6 +426,11 @@ const GameLobby: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Gorbagana Integration Modal */}
+      {showGorbaganaModal && (
+        <GorbaganaIntegration onClose={() => setShowGorbaganaModal(false)} />
+      )}
     </div>
   );
 };

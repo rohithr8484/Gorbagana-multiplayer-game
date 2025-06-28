@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useWallet } from '@solana/wallet-adapter-react';
 import { useGame } from '../contexts/GameContext';
 import { Coins, Clock, ArrowLeft, Zap, Star, Shield, Target, Trophy, User } from 'lucide-react';
+import { GorbaganaRPC, formatGOR } from '../utils/gorbaganaRPC';
 
 interface Coin {
   id: string;
@@ -22,7 +24,9 @@ interface PowerUp {
 }
 
 const GameArena: React.FC = () => {
+  const wallet = useWallet();
   const { setCurrentScreen, gameState, setGameState } = useGame();
+  const [gorbaganaRPC, setGorbaganaRPC] = useState<GorbaganaRPC | null>(null);
   const [coins, setCoins] = useState<Coin[]>([]);
   const [score, setScore] = useState(0);
   const [timeLeft, setTimeLeft] = useState(60);
@@ -38,8 +42,17 @@ const GameArena: React.FC = () => {
   const [particles, setParticles] = useState<any[]>([]);
   const [achievements, setAchievements] = useState<string[]>([]);
   const [countdown, setCountdown] = useState(3);
+  const [gameStartTime, setGameStartTime] = useState<Date | null>(null);
   const gameAreaRef = useRef<HTMLDivElement>(null);
   const animationRef = useRef<number>();
+
+  // Initialize Gorbagana RPC
+  useEffect(() => {
+    if (wallet.connected && wallet.publicKey) {
+      const rpc = new GorbaganaRPC(wallet);
+      setGorbaganaRPC(rpc);
+    }
+  }, [wallet.connected, wallet.publicKey]);
 
   // Start game countdown
   useEffect(() => {
@@ -50,6 +63,7 @@ const GameArena: React.FC = () => {
       return () => clearTimeout(timer);
     } else {
       setGameStarted(true);
+      setGameStartTime(new Date());
     }
   }, [countdown]);
 
@@ -328,7 +342,32 @@ const GameArena: React.FC = () => {
   };
 
   const GameOverModal = () => {
-    const earnedGOR = Math.max(0, score * 2);
+    const gameDuration = gameStartTime ? Math.floor((Date.now() - gameStartTime.getTime()) / 1000) : 60;
+    const earnedGOR = Math.max(5, Math.floor(score / 10)); // Minimum 5 GOR, 1 GOR per 10 points
+
+    // Submit game result to Gorbagana when game ends
+    useEffect(() => {
+      if (gorbaganaRPC && gameStartTime) {
+        const gameResult = {
+          score,
+          coinsCollected,
+          gameMode: gameState.gameMode || 'blitz',
+          duration: gameDuration,
+          streakAchieved: highestStreak,
+          rank: 1, // In a real multiplayer game, this would be calculated
+          totalPlayers: 4, // Mock value
+        };
+
+        // Validate and distribute rewards
+        gorbaganaRPC.validateGameResult(gameResult).then(isValid => {
+          if (isValid) {
+            gorbaganaRPC.distributeRewards(gameResult).then(transaction => {
+              console.log('Game rewards distributed:', transaction);
+            });
+          }
+        });
+      }
+    }, []);
     
     return (
       <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
@@ -338,10 +377,11 @@ const GameArena: React.FC = () => {
             <h2 className="text-3xl font-bold text-white mb-4">Game Over!</h2>
             <div className="space-y-3 mb-6">
               <p className="text-2xl text-yellow-400 font-bold">Final Score: {score}</p>
-              <p className="text-green-400 font-bold">GOR Earned: +{earnedGOR}</p>
+              <p className="text-green-400 font-bold">GOR Earned: {formatGOR(earnedGOR)}</p>
               <p className="text-gray-300">Coins Collected: {coinsCollected}</p>
               <p className="text-gray-300">Best Streak: {highestStreak}</p>
               <p className="text-gray-300">Max Multiplier: x{multiplier}</p>
+              <p className="text-gray-300">Game Duration: {formatTime(gameDuration)}</p>
               
               {achievements.length > 0 && (
                 <div className="mt-4 p-3 bg-purple-600/20 rounded-lg">
@@ -375,6 +415,7 @@ const GameArena: React.FC = () => {
                   setAchievements([]);
                   setCoinsCollected(0);
                   setHighestStreak(0);
+                  setGameStartTime(null);
                 }}
                 className="flex-1 px-4 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg font-medium hover:from-purple-700 hover:to-blue-700 transition-all"
               >
