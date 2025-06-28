@@ -178,15 +178,25 @@ const GameArena: React.FC = () => {
         break;
     }
 
-    setScore(prev => Math.max(0, prev + scoreGain));
+    // Update score immediately
+    const newScore = Math.max(0, score + scoreGain);
+    setScore(newScore);
     setStreak(newStreak);
     setMultiplier(newMultiplier);
     setShields(newShields);
     setComboText(comboMessage);
     
+    // Update player score in players array
+    setPlayers(prev => prev.map(player => 
+      player.id === '1' 
+        ? { ...player, score: newScore, streak: newStreak, multiplier: newMultiplier, shields: newShields }
+        : player
+    ));
+    
     // Clear combo text after 2 seconds
     setTimeout(() => setComboText(''), 2000);
 
+    // Remove the clicked token immediately
     setTokens(prev => prev.filter(t => t.id !== tokenId));
 
     // Enhanced particle effects
@@ -206,7 +216,7 @@ const GameArena: React.FC = () => {
     setParticles(prev => [...prev, ...newParticles]);
 
     // Check for achievements
-    checkAchievements(newStreak, score + scoreGain, newMultiplier);
+    checkAchievements(newStreak, newScore, newMultiplier);
   };
 
   // Achievement system
@@ -260,9 +270,9 @@ const GameArena: React.FC = () => {
           multiplier: Math.random() < 0.05 ? Math.min(player.multiplier + 1, 4) : Math.max(1, player.multiplier - 0.1)
         };
       }
-      return { ...player, score, streak, multiplier, shields };
+      return player; // Return current player data unchanged since we update it in handleTokenClick
     }));
-  }, [score, streak, multiplier, shields]);
+  }, []);
 
   // Power-up management
   useEffect(() => {
@@ -437,6 +447,11 @@ const GameArena: React.FC = () => {
                   setMultiplier(1);
                   setShields(0);
                   setAchievements([]);
+                  setPlayers(prev => prev.map(player => 
+                    player.id === '1' 
+                      ? { ...player, score: 0, streak: 0, multiplier: 1, shields: 0 }
+                      : { ...player, score: 0, streak: 0, multiplier: 1, shields: 0 }
+                  ));
                 }}
                 className="flex-1 px-4 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg font-medium hover:from-purple-700 hover:to-blue-700 transition-all"
               >
@@ -644,10 +659,10 @@ const GameArena: React.FC = () => {
                   <span>Multiplier boost</span>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <div className="w-6 h-6 bg-cyan-400 rounded-full flex items-center justify-center">
-                    <Shield className="w-3 h-3" />
+                  <div className="w-6 h-6 bg-gray-800 rounded-full flex items-center justify-center">
+                    <Target className="w-3 h-3" />
                   </div>
-                  <span>Shield protection</span>
+                  <span>Avoid bombs!</span>
                 </div>
               </div>
             </div>
