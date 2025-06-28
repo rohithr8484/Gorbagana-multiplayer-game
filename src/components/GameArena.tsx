@@ -101,7 +101,7 @@ const GameArena: React.FC = () => {
       x: Math.random() * (gameArea.width - selectedType.size),
       y: -selectedType.size,
       value: selectedType.value,
-      speed: Math.random() * 2 + 2, // Increased base speed
+      speed: Math.random() * 3 + 2, // Increased speed range: 2-5 pixels per frame
       color: selectedType.color,
       type: selectedType.type as any,
       size: selectedType.size,
@@ -221,6 +221,10 @@ const GameArena: React.FC = () => {
 
   // Enhanced token updates with rotation and AI opponents
   const updateTokens = useCallback(() => {
+    if (!gameAreaRef.current) return;
+    
+    const gameAreaHeight = window.innerHeight;
+    
     setTokens(prevTokens => {
       return prevTokens
         .map(token => ({ 
@@ -228,7 +232,7 @@ const GameArena: React.FC = () => {
           y: token.y + token.speed,
           rotation: token.rotation + (token.pulse ? 5 : 2)
         }))
-        .filter(token => token.y < window.innerHeight + 100);
+        .filter(token => token.y < gameAreaHeight + 100); // Allow tokens to fall completely off screen
     });
 
     // Enhanced AI opponent behavior
@@ -284,7 +288,7 @@ const GameArena: React.FC = () => {
     );
   }, []);
 
-  // Game loop
+  // Game loop - runs at 60fps
   useEffect(() => {
     if (!gameActive || !gameStarted) return;
 
@@ -307,7 +311,7 @@ const GameArena: React.FC = () => {
   useEffect(() => {
     if (!gameActive || !gameStarted) return;
 
-    const baseInterval = Math.max(400, 1000 - (60 - timeLeft) * 8); // Gets faster over time
+    const baseInterval = Math.max(300, 800 - (60 - timeLeft) * 8); // Gets faster over time, starts at 800ms
     
     tokenGenerationRef.current = setInterval(() => {
       generateToken();
