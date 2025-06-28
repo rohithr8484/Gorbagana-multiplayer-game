@@ -46,7 +46,7 @@ A competitive, real-time multiplayer mini-game built on Gorbagana's Solana-based
 - **Endurance Race**: 25 GOR entry → up to 500 GOR reward (skill-based)
 - **Tournament Mode**: 50 GOR entry → up to 2000 GOR reward (competitive)
 - **Achievement System**: Bonus rewards for completing challenges
-- **Daily Bonuses**: 50 GOR daily login rewards
+- **Daily Bonuses**: GOR login rewards
 
 ## 🚀 Enhanced Features
 
