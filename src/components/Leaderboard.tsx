@@ -5,7 +5,7 @@ interface LeaderboardEntry {
   rank: number;
   player: string;
   score: number;
-  tokens: number;
+  coins: number;
   games: number;
   winRate: number;
   avatar: string;
@@ -25,9 +25,9 @@ const Leaderboard: React.FC = () => {
     const mockData: LeaderboardEntry[] = [
       { 
         rank: 1, 
-        player: 'TokenMaster', 
+        player: 'CoinMaster', 
         score: 2847, 
-        tokens: 15420, 
+        coins: 15420, 
         games: 48, 
         winRate: 89, 
         avatar: '👑', 
@@ -40,20 +40,20 @@ const Leaderboard: React.FC = () => {
         rank: 2, 
         player: 'GORCollector', 
         score: 2563, 
-        tokens: 13890, 
+        coins: 13890, 
         games: 52, 
         winRate: 76, 
         avatar: '🚀', 
         trending: 'up',
         streak: 18,
-        achievements: ['consistent_player', 'token_hunter'],
+        achievements: ['consistent_player', 'coin_hunter'],
         gorEarned: 4890
       },
       { 
         rank: 3, 
         player: 'SpeedRunner', 
         score: 2341, 
-        tokens: 12670, 
+        coins: 12670, 
         games: 44, 
         winRate: 82, 
         avatar: '⚡', 
@@ -66,7 +66,7 @@ const Leaderboard: React.FC = () => {
         rank: 4, 
         player: 'CoinHunter', 
         score: 2198, 
-        tokens: 11230, 
+        coins: 11230, 
         games: 56, 
         winRate: 71, 
         avatar: '🎯', 
@@ -79,7 +79,7 @@ const Leaderboard: React.FC = () => {
         rank: 5, 
         player: 'You', 
         score: 1876, 
-        tokens: 9840, 
+        coins: 9840, 
         games: 23, 
         winRate: 65, 
         avatar: '🎮', 
@@ -92,7 +92,7 @@ const Leaderboard: React.FC = () => {
         rank: 6, 
         player: 'FastClicker', 
         score: 1654, 
-        tokens: 8760, 
+        coins: 8760, 
         games: 38, 
         winRate: 68, 
         avatar: '🔥', 
@@ -103,9 +103,9 @@ const Leaderboard: React.FC = () => {
       },
       { 
         rank: 7, 
-        player: 'TokenKing', 
+        player: 'CoinKing', 
         score: 1543, 
-        tokens: 8120, 
+        coins: 8120, 
         games: 41, 
         winRate: 63, 
         avatar: '💎', 
@@ -118,7 +118,7 @@ const Leaderboard: React.FC = () => {
         rank: 8, 
         player: 'GORGrabber', 
         score: 1432, 
-        tokens: 7580, 
+        coins: 7580, 
         games: 35, 
         winRate: 69, 
         avatar: '🎪', 
@@ -131,7 +131,7 @@ const Leaderboard: React.FC = () => {
         rank: 9, 
         player: 'ClickMaster', 
         score: 1321, 
-        tokens: 6940, 
+        coins: 6940, 
         games: 29, 
         winRate: 72, 
         avatar: '🎨', 
@@ -142,9 +142,9 @@ const Leaderboard: React.FC = () => {
       },
       { 
         rank: 10, 
-        player: 'TokenNinja', 
+        player: 'CoinNinja', 
         score: 1234, 
-        tokens: 6450, 
+        coins: 6450, 
         games: 33, 
         winRate: 58, 
         avatar: '🥷', 

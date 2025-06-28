@@ -56,7 +56,7 @@ function AppContent() {
             <div className="hidden md:flex items-center space-x-6 text-sm text-gray-300">
               <span>Gorbagana Testnet</span>
               <span>•</span>
-              <span>Multiplayer Token Game</span>
+              <span>Multiplayer Coin Game</span>
             </div>
           </div>
 

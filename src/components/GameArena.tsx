@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useGame } from '../contexts/GameContext';
 import { Coins, Clock, ArrowLeft, Zap, Star, Shield, Target, Trophy, User } from 'lucide-react';
 
-interface Token {
+interface Coin {
   id: string;
   x: number;
   y: number;
@@ -23,7 +23,7 @@ interface PowerUp {
 
 const GameArena: React.FC = () => {
   const { setCurrentScreen, gameState, setGameState } = useGame();
-  const [tokens, setTokens] = useState<Token[]>([]);
+  const [coins, setCoins] = useState<Coin[]>([]);
   const [score, setScore] = useState(0);
   const [timeLeft, setTimeLeft] = useState(60);
   const [gameActive, setGameActive] = useState(true);
@@ -33,7 +33,7 @@ const GameArena: React.FC = () => {
   const [shields, setShields] = useState(0);
   const [powerUps, setPowerUps] = useState<PowerUp[]>([]);
   const [comboText, setComboText] = useState<string>('');
-  const [tokensCollected, setTokensCollected] = useState(0);
+  const [coinsCollected, setCoinsCollected] = useState(0);
   const [highestStreak, setHighestStreak] = useState(0);
   const [particles, setParticles] = useState<any[]>([]);
   const [achievements, setAchievements] = useState<string[]>([]);
@@ -53,12 +53,12 @@ const GameArena: React.FC = () => {
     }
   }, [countdown]);
 
-  // Enhanced token generation with BIGGER sizes for easier gameplay
-  const generateToken = useCallback(() => {
+  // Enhanced coin generation with BIGGER sizes for easier gameplay
+  const generateCoin = useCallback(() => {
     if (!gameAreaRef.current || !gameStarted || !gameActive) return;
     
     const gameArea = gameAreaRef.current.getBoundingClientRect();
-    const tokenTypes = [
+    const coinTypes = [
       { value: 1, color: 'bg-yellow-400', type: 'normal', weight: 50, size: 60 },
       { value: 5, color: 'bg-blue-400', type: 'normal', weight: 30, size: 65 },
       { value: 10, color: 'bg-purple-400', type: 'bonus', weight: 12, size: 70 },
@@ -67,11 +67,11 @@ const GameArena: React.FC = () => {
       { value: -10, color: 'bg-gray-800', type: 'bomb', weight: 1, size: 60 },
     ];
     
-    const totalWeight = tokenTypes.reduce((sum, type) => sum + type.weight, 0);
+    const totalWeight = coinTypes.reduce((sum, type) => sum + type.weight, 0);
     let random = Math.random() * totalWeight;
-    let selectedType = tokenTypes[0];
+    let selectedType = coinTypes[0];
     
-    for (const type of tokenTypes) {
+    for (const type of coinTypes) {
       random -= type.weight;
       if (random <= 0) {
         selectedType = type;
@@ -79,7 +79,7 @@ const GameArena: React.FC = () => {
       }
     }
     
-    const newToken: Token = {
+    const newCoin: Coin = {
       id: Math.random().toString(36).substr(2, 9),
       x: Math.random() * (gameArea.width - selectedType.size),
       y: -selectedType.size,
@@ -92,13 +92,13 @@ const GameArena: React.FC = () => {
       pulse: selectedType.type !== 'normal',
     };
     
-    setTokens(prev => [...prev, newToken]);
+    setCoins(prev => [...prev, newCoin]);
   }, [gameStarted, gameActive]);
 
-  // Enhanced token click handling with power-ups and combos
-  const handleTokenClick = (tokenId: string) => {
-    const token = tokens.find(t => t.id === tokenId);
-    if (!token) return;
+  // Enhanced coin click handling with power-ups and combos
+  const handleCoinClick = (coinId: string) => {
+    const coin = coins.find(t => t.id === coinId);
+    if (!coin) return;
 
     let scoreGain = 0;
     let newStreak = streak;
@@ -106,12 +106,12 @@ const GameArena: React.FC = () => {
     let newShields = shields;
     let comboMessage = '';
 
-    switch (token.type) {
+    switch (coin.type) {
       case 'normal':
       case 'bonus':
-        scoreGain = token.value * multiplier;
+        scoreGain = coin.value * multiplier;
         newStreak = streak + 1;
-        setTokensCollected(prev => prev + 1);
+        setCoinsCollected(prev => prev + 1);
         
         // Update highest streak
         if (newStreak > highestStreak) {
@@ -139,7 +139,7 @@ const GameArena: React.FC = () => {
           newShields = shields - 1;
           comboMessage = 'SHIELD PROTECTED!';
         } else {
-          scoreGain = token.value;
+          scoreGain = coin.value;
           newStreak = 0;
           newMultiplier = 1;
           comboMessage = 'BOMB HIT!';
@@ -168,21 +168,21 @@ const GameArena: React.FC = () => {
     // Clear combo text after 2 seconds
     setTimeout(() => setComboText(''), 2000);
 
-    // Remove the clicked token immediately
-    setTokens(prev => prev.filter(t => t.id !== tokenId));
+    // Remove the clicked coin immediately
+    setCoins(prev => prev.filter(t => t.id !== coinId));
 
     // Enhanced particle effects
-    const particleCount = token.type === 'bonus' ? 8 : 5;
+    const particleCount = coin.type === 'bonus' ? 8 : 5;
     const newParticles = Array.from({ length: particleCount }, (_, i) => ({
       id: Math.random().toString(36).substr(2, 9),
-      x: token.x + token.size / 2,
-      y: token.y + token.size / 2,
+      x: coin.x + coin.size / 2,
+      y: coin.y + coin.size / 2,
       vx: (Math.random() - 0.5) * 15,
       vy: (Math.random() - 0.5) * 15,
       life: 1,
       value: scoreGain,
-      color: token.color,
-      type: token.type,
+      color: coin.color,
+      type: coin.type,
     }));
     
     setParticles(prev => [...prev, ...newParticles]);
@@ -211,16 +211,16 @@ const GameArena: React.FC = () => {
     }
   };
 
-  // Enhanced token updates with rotation - ENSURE TOKENS FALL TO BOTTOM
-  const updateTokens = useCallback(() => {
-    setTokens(prevTokens => {
-      return prevTokens
-        .map(token => ({ 
-          ...token, 
-          y: token.y + token.speed,
-          rotation: token.rotation + (token.pulse ? 3 : 1)
+  // Enhanced coin updates with rotation - ENSURE COINS FALL TO BOTTOM
+  const updateCoins = useCallback(() => {
+    setCoins(prevCoins => {
+      return prevCoins
+        .map(coin => ({ 
+          ...coin, 
+          y: coin.y + coin.speed,
+          rotation: coin.rotation + (coin.pulse ? 3 : 1)
         }))
-        .filter(token => token.y < window.innerHeight + 100); // Allow tokens to fall completely off screen
+        .filter(coin => coin.y < window.innerHeight + 100); // Allow coins to fall completely off screen
     });
   }, []);
 
@@ -245,7 +245,7 @@ const GameArena: React.FC = () => {
     if (!gameActive || !gameStarted) return;
 
     const gameLoop = () => {
-      updateTokens();
+      updateCoins();
       updateParticles();
       animationRef.current = requestAnimationFrame(gameLoop);
     };
@@ -257,18 +257,18 @@ const GameArena: React.FC = () => {
         cancelAnimationFrame(animationRef.current);
       }
     };
-  }, [gameActive, gameStarted, updateTokens, updateParticles]);
+  }, [gameActive, gameStarted, updateCoins, updateParticles]);
 
-  // Token generation - slower for easier gameplay
+  // Coin generation - slower for easier gameplay
   useEffect(() => {
     if (!gameActive || !gameStarted) return;
 
     const interval = setInterval(() => {
-      generateToken();
-    }, 1000); // Generate a token every 1 second
+      generateCoin();
+    }, 1000); // Generate a coin every 1 second
 
     return () => clearInterval(interval);
-  }, [gameActive, gameStarted, generateToken]);
+  }, [gameActive, gameStarted, generateCoin]);
 
   // Timer
   useEffect(() => {
@@ -317,7 +317,7 @@ const GameArena: React.FC = () => {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const getTokenIcon = (type: string) => {
+  const getCoinIcon = (type: string) => {
     switch (type) {
       case 'multiplier': return <Zap className="w-6 h-6" />;
       case 'shield': return <Shield className="w-6 h-6" />;
@@ -339,7 +339,7 @@ const GameArena: React.FC = () => {
             <div className="space-y-3 mb-6">
               <p className="text-2xl text-yellow-400 font-bold">Final Score: {score}</p>
               <p className="text-green-400 font-bold">GOR Earned: +{earnedGOR}</p>
-              <p className="text-gray-300">Tokens Collected: {tokensCollected}</p>
+              <p className="text-gray-300">Coins Collected: {coinsCollected}</p>
               <p className="text-gray-300">Best Streak: {highestStreak}</p>
               <p className="text-gray-300">Max Multiplier: x{multiplier}</p>
               
@@ -368,12 +368,12 @@ const GameArena: React.FC = () => {
                   setGameActive(true);
                   setGameStarted(false);
                   setCountdown(3);
-                  setTokens([]);
+                  setCoins([]);
                   setStreak(0);
                   setMultiplier(1);
                   setShields(0);
                   setAchievements([]);
-                  setTokensCollected(0);
+                  setCoinsCollected(0);
                   setHighestStreak(0);
                 }}
                 className="flex-1 px-4 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg font-medium hover:from-purple-700 hover:to-blue-700 transition-all"
@@ -463,7 +463,7 @@ const GameArena: React.FC = () => {
               <Target className="w-4 h-4 text-green-400" />
               <span className="text-sm text-gray-300">Collected</span>
             </div>
-            <span className="text-green-400 font-bold">{tokensCollected}</span>
+            <span className="text-green-400 font-bold">{coinsCollected}</span>
           </div>
           
           <div className="flex items-center justify-between p-2 rounded-lg bg-white/5">
@@ -534,27 +534,27 @@ const GameArena: React.FC = () => {
         className="absolute inset-0 cursor-crosshair"
         style={{ paddingTop: '80px' }}
       >
-        {/* Enhanced Falling Tokens - BIGGER SIZES */}
-        {tokens.map(token => (
+        {/* Enhanced Falling Coins - BIGGER SIZES */}
+        {coins.map(coin => (
           <div
-            key={token.id}
-            className={`absolute ${token.color} rounded-full flex items-center justify-center text-white font-bold text-lg cursor-pointer transition-all shadow-lg ${
-              token.pulse ? 'animate-pulse' : ''
+            key={coin.id}
+            className={`absolute ${coin.color} rounded-full flex items-center justify-center text-white font-bold text-lg cursor-pointer transition-all shadow-lg ${
+              coin.pulse ? 'animate-pulse' : ''
             } hover:scale-110 border-2 border-white/20`}
             style={{
-              left: `${token.x}px`,
-              top: `${token.y}px`,
-              width: `${token.size}px`,
-              height: `${token.size}px`,
-              transform: `rotate(${token.rotation}deg)`,
-              boxShadow: token.type === 'bonus' ? '0 0 20px rgba(255, 255, 255, 0.5)' : '0 4px 15px rgba(0, 0, 0, 0.3)',
+              left: `${coin.x}px`,
+              top: `${coin.y}px`,
+              width: `${coin.size}px`,
+              height: `${coin.size}px`,
+              transform: `rotate(${coin.rotation}deg)`,
+              boxShadow: coin.type === 'bonus' ? '0 0 20px rgba(255, 255, 255, 0.5)' : '0 4px 15px rgba(0, 0, 0, 0.3)',
             }}
-            onClick={() => handleTokenClick(token.id)}
+            onClick={() => handleCoinClick(coin.id)}
           >
-            {token.type === 'normal' || token.type === 'bonus' ? (
-              <span className="text-lg font-bold">{token.value}</span>
+            {coin.type === 'normal' || coin.type === 'bonus' ? (
+              <span className="text-lg font-bold">{coin.value}</span>
             ) : (
-              getTokenIcon(token.type)
+              getCoinIcon(coin.type)
             )}
           </div>
         ))}
@@ -577,20 +577,20 @@ const GameArena: React.FC = () => {
         ))}
 
         {/* Game Instructions */}
-        {gameActive && gameStarted && tokens.length === 0 && (
+        {gameActive && gameStarted && coins.length === 0 && (
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="text-center text-white">
               <Coins className="w-16 h-16 text-yellow-400 mx-auto mb-4 animate-bounce" />
-              <h2 className="text-3xl font-bold mb-2">Tokens incoming!</h2>
-              <p className="text-xl text-gray-300 mb-4">Click the falling tokens to collect them!</p>
+              <h2 className="text-3xl font-bold mb-2">Coins incoming!</h2>
+              <p className="text-xl text-gray-300 mb-4">Click the falling coins to collect them!</p>
               <div className="grid grid-cols-2 gap-4 text-sm text-gray-300 max-w-md">
                 <div className="flex items-center space-x-2">
                   <div className="w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center text-sm font-bold">1</div>
-                  <span>Basic tokens</span>
+                  <span>Basic coins</span>
                 </div>
                 <div className="flex items-center space-x-2">
                   <div className="w-8 h-8 bg-purple-400 rounded-full flex items-center justify-center text-sm font-bold">10</div>
-                  <span>Bonus tokens</span>
+                  <span>Bonus coins</span>
                 </div>
                 <div className="flex items-center space-x-2">
                   <div className="w-8 h-8 bg-green-400 rounded-full flex items-center justify-center">

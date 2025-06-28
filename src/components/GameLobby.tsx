@@ -11,14 +11,14 @@ const GameLobby: React.FC = () => {
   const [gorBalance, setGorBalance] = useState(1000);
   const [gameStats, setGameStats] = useState({
     gamesPlayed: 23,
-    tokensCollected: 1847,
+    coinsCollected: 1847,
     highScore: 156,
     rank: 47,
     winRate: 68,
     totalEarned: 2340
   });
   const [liveEvents, setLiveEvents] = useState([
-    { id: 1, text: 'TokenMaster just scored 247 points!', type: 'score', time: '2s ago' },
+    { id: 1, text: 'CoinMaster just scored 247 points!', type: 'score', time: '2s ago' },
     { id: 2, text: 'New tournament starting in 3 minutes', type: 'tournament', time: '1m ago' },
     { id: 3, text: 'Daily bonus: +50 GOR available!', type: 'bonus', time: '5m ago' },
     { id: 4, text: 'GORCollector achieved 20x streak!', type: 'achievement', time: '8m ago' },
@@ -33,8 +33,8 @@ const GameLobby: React.FC = () => {
     // Simulate live events
     const eventInterval = setInterval(() => {
       const events = [
-        { text: `Player just collected ${Math.floor(Math.random() * 100) + 50} tokens!`, type: 'score' },
-        { text: 'New high score: ' + (Math.floor(Math.random() * 200) + 200) + ' tokens', type: 'score' },
+        { text: `Player just collected ${Math.floor(Math.random() * 100) + 50} coins!`, type: 'score' },
+        { text: 'New high score: ' + (Math.floor(Math.random() * 200) + 200) + ' coins', type: 'score' },
         { text: 'Tournament starting soon!', type: 'tournament' },
         { text: 'Someone just earned 500 GOR!', type: 'bonus' },
         { text: 'Epic 15x multiplier achieved!', type: 'achievement' },
@@ -122,12 +122,12 @@ const GameLobby: React.FC = () => {
                 Welcome to <span className="bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent">GOR Rush</span>
               </h2>
               <p className="text-gray-300 text-lg mb-6">
-                The ultimate multiplayer token collection experience on Gorbagana testnet. Compete, collect, and earn real GOR tokens!
+                The ultimate multiplayer coin collection experience on Gorbagana testnet. Compete, collect, and earn real GOR coins!
               </p>
               
               {!connected ? (
                 <div className="space-y-4">
-                  <p className="text-yellow-400 font-medium">Connect your Backpack wallet to start earning GOR tokens</p>
+                  <p className="text-yellow-400 font-medium">Connect your Backpack wallet to start earning GOR coins</p>
                   <WalletMultiButton className="!bg-gradient-to-r !from-purple-600 !to-blue-600 hover:!from-purple-700 hover:!to-blue-700 !rounded-lg !font-bold !px-8 !py-3" />
                   <div className="text-sm text-gray-400 mt-4">
                     <p>🎮 Play games • 🏆 Earn GOR • 📈 Climb leaderboards</p>
@@ -169,7 +169,7 @@ const GameLobby: React.FC = () => {
             
             <GameModeCard
               title="Blitz Rush"
-              description="Fast-paced 60-second token collection frenzy"
+              description="Fast-paced 60-second coin collection frenzy"
               duration="60 seconds"
               entryFee={10}
               reward={50}
@@ -185,7 +185,7 @@ const GameLobby: React.FC = () => {
               entryFee={25}
               reward={150}
               icon={Clock}
-              features={['Scaling difficulty', 'Special tokens', 'Shield protection']}
+              features={['Scaling difficulty', 'Special coins', 'Shield protection']}
               onClick={connected ? () => startGame('endurance') : undefined}
             />
             
@@ -201,11 +201,11 @@ const GameLobby: React.FC = () => {
             />
           </div>
 
-          {/* Token Guide */}
+          {/* Coin Guide */}
           <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-xl p-6">
             <h3 className="text-xl font-bold text-white mb-4 flex items-center">
               <Target className="w-5 h-5 mr-2" />
-              Token Types & Strategy
+              Coin Types & Strategy
             </h3>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="text-center">
@@ -338,11 +338,11 @@ const GameLobby: React.FC = () => {
               </div>
               <div className="flex items-start space-x-2">
                 <Zap className="w-4 h-4 text-purple-400 mt-0.5 flex-shrink-0" />
-                <span>Multiplier tokens stack for huge bonuses</span>
+                <span>Multiplier coins stack for huge bonuses</span>
               </div>
               <div className="flex items-start space-x-2">
                 <Clock className="w-4 h-4 text-orange-400 mt-0.5 flex-shrink-0" />
-                <span>Time tokens extend your game duration</span>
+                <span>Time coins extend your game duration</span>
               </div>
               <div className="flex items-start space-x-2">
                 <Trophy className="w-4 h-4 text-gold-400 mt-0.5 flex-shrink-0" />
