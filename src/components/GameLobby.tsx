@@ -468,10 +468,6 @@ const GameLobby: React.FC = () => {
                 <span>Build streaks for massive score multipliers</span>
               </div>
               <div className="flex items-start space-x-2">
-                <Shield className="w-4 h-4 text-cyan-400 mt-0.5 flex-shrink-0" />
-                <span>Collect shields to protect against bombs</span>
-              </div>
-              <div className="flex items-start space-x-2">
                 <Zap className="w-4 h-4 text-purple-400 mt-0.5 flex-shrink-0" />
                 <span>Multiplier coins stack for huge bonuses</span>
               </div>
