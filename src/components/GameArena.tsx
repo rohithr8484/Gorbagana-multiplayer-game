@@ -37,6 +37,7 @@ const GameArena: React.FC = () => {
   const [score, setScore] = useState(0);
   const [timeLeft, setTimeLeft] = useState(60);
   const [gameActive, setGameActive] = useState(true);
+  const [gameStarted, setGameStarted] = useState(false);
   const [streak, setStreak] = useState(0);
   const [multiplier, setMultiplier] = useState(1);
   const [shields, setShields] = useState(0);
@@ -50,13 +51,26 @@ const GameArena: React.FC = () => {
   ]);
   const [particles, setParticles] = useState<any[]>([]);
   const [achievements, setAchievements] = useState<string[]>([]);
-  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [countdown, setCountdown] = useState(3);
   const gameAreaRef = useRef<HTMLDivElement>(null);
   const animationRef = useRef<number>();
+  const tokenGenerationRef = useRef<NodeJS.Timeout>();
+
+  // Start game countdown
+  useEffect(() => {
+    if (countdown > 0) {
+      const timer = setTimeout(() => {
+        setCountdown(countdown - 1);
+      }, 1000);
+      return () => clearTimeout(timer);
+    } else {
+      setGameStarted(true);
+    }
+  }, [countdown]);
 
   // Enhanced token generation with special types
   const generateToken = useCallback(() => {
-    if (!gameAreaRef.current) return;
+    if (!gameAreaRef.current || !gameStarted || !gameActive) return;
     
     const gameArea = gameAreaRef.current.getBoundingClientRect();
     const tokenTypes = [
@@ -87,7 +101,7 @@ const GameArena: React.FC = () => {
       x: Math.random() * (gameArea.width - selectedType.size),
       y: -selectedType.size,
       value: selectedType.value,
-      speed: Math.random() * 2 + 1.5,
+      speed: Math.random() * 2 + 2, // Increased base speed
       color: selectedType.color,
       type: selectedType.type as any,
       size: selectedType.size,
@@ -96,7 +110,7 @@ const GameArena: React.FC = () => {
     };
     
     setTokens(prev => [...prev, newToken]);
-  }, []);
+  }, [gameStarted, gameActive]);
 
   // Enhanced token click handling with power-ups and combos
   const handleTokenClick = (tokenId: string) => {
@@ -203,13 +217,6 @@ const GameArena: React.FC = () => {
       newAchievements.push('multiplier_max');
       setAchievements(prev => [...prev, 'multiplier_max']);
     }
-
-    // Show achievement notifications
-    newAchievements.forEach(achievement => {
-      setTimeout(() => {
-        // Achievement notification logic here
-      }, 500);
-    });
   };
 
   // Enhanced token updates with rotation and AI opponents
@@ -279,7 +286,7 @@ const GameArena: React.FC = () => {
 
   // Game loop
   useEffect(() => {
-    if (!gameActive) return;
+    if (!gameActive || !gameStarted) return;
 
     const gameLoop = () => {
       updateTokens();
@@ -294,25 +301,28 @@ const GameArena: React.FC = () => {
         cancelAnimationFrame(animationRef.current);
       }
     };
-  }, [gameActive, updateTokens, updateParticles]);
+  }, [gameActive, gameStarted, updateTokens, updateParticles]);
 
   // Enhanced token generation with difficulty scaling
   useEffect(() => {
-    if (!gameActive) return;
+    if (!gameActive || !gameStarted) return;
 
-    const baseInterval = Math.max(500, 1200 - (60 - timeLeft) * 10); // Gets faster over time
-    const interval = setInterval(() => {
-      if (Math.random() < 0.8) {
-        generateToken();
-      }
+    const baseInterval = Math.max(400, 1000 - (60 - timeLeft) * 8); // Gets faster over time
+    
+    tokenGenerationRef.current = setInterval(() => {
+      generateToken();
     }, baseInterval);
 
-    return () => clearInterval(interval);
-  }, [gameActive, generateToken, timeLeft]);
+    return () => {
+      if (tokenGenerationRef.current) {
+        clearInterval(tokenGenerationRef.current);
+      }
+    };
+  }, [gameActive, gameStarted, generateToken, timeLeft]);
 
   // Timer
   useEffect(() => {
-    if (!gameActive) return;
+    if (!gameActive || !gameStarted) return;
 
     const timer = setInterval(() => {
       setTimeLeft(prev => {
@@ -325,7 +335,7 @@ const GameArena: React.FC = () => {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [gameActive]);
+  }, [gameActive, gameStarted]);
 
   const exitGame = () => {
     setGameActive(false);
@@ -389,6 +399,8 @@ const GameArena: React.FC = () => {
                   setScore(0);
                   setTimeLeft(60);
                   setGameActive(true);
+                  setGameStarted(false);
+                  setCountdown(3);
                   setTokens([]);
                   setStreak(0);
                   setMultiplier(1);
@@ -408,6 +420,21 @@ const GameArena: React.FC = () => {
 
   return (
     <div className="min-h-screen relative overflow-hidden">
+      {/* Countdown Overlay */}
+      {countdown > 0 && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="text-center">
+            <div className="text-8xl font-bold text-white mb-4 animate-pulse">
+              {countdown}
+            </div>
+            <p className="text-2xl text-gray-300">Get Ready!</p>
+            <div className="mt-8 text-lg text-gray-400">
+              <p>Click the falling GOR tokens to collect them!</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Enhanced Game Header */}
       <div className="absolute top-0 left-0 right-0 z-20 p-4 bg-black/20 backdrop-blur-md">
         <div className="flex items-center justify-between">
@@ -563,11 +590,11 @@ const GameArena: React.FC = () => {
         ))}
 
         {/* Game Instructions */}
-        {gameActive && tokens.length === 0 && (
+        {gameActive && gameStarted && tokens.length === 0 && (
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="text-center text-white">
               <Coins className="w-16 h-16 text-yellow-400 mx-auto mb-4 animate-bounce" />
-              <h2 className="text-3xl font-bold mb-2">Get Ready!</h2>
+              <h2 className="text-3xl font-bold mb-2">Tokens incoming!</h2>
               <p className="text-xl text-gray-300 mb-4">Click the falling GOR tokens to collect them!</p>
               <div className="grid grid-cols-2 gap-4 text-sm text-gray-300 max-w-md">
                 <div className="flex items-center space-x-2">
