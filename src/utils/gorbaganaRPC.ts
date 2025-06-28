@@ -35,6 +35,7 @@ export interface GorbaganaTransaction {
 export interface PlayerGORBalance {
   balance: number;
   lastUpdated: Date;
+  isBackpackWallet: boolean;
 }
 
 export class GorbaganaRPC {
@@ -46,9 +47,27 @@ export class GorbaganaRPC {
     this.wallet = wallet;
   }
 
+  // Verify Backpack wallet is connected
+  private verifyBackpackWallet(): boolean {
+    if (!this.wallet.connected || !this.wallet.publicKey) {
+      throw new Error('Backpack wallet not connected');
+    }
+    
+    // Check if the connected wallet is Backpack
+    const isBackpack = this.wallet.wallet?.adapter?.name === 'Backpack';
+    if (!isBackpack) {
+      throw new Error('Please connect using Backpack wallet only');
+    }
+    
+    return true;
+  }
+
   // Connect to Gorbagana Testnet and verify connection
   async connectToGorbaganaTestnet(): Promise<{ success: boolean; message: string; networkInfo?: any }> {
     try {
+      // Verify Backpack wallet first
+      this.verifyBackpackWallet();
+      
       // Test connection to Gorbagana RPC
       const version = await this.connection.getVersion();
       const slot = await this.connection.getSlot();
@@ -59,45 +78,81 @@ export class GorbaganaRPC {
         solanaVersion: version['solana-core'],
         currentSlot: slot,
         network: GORBAGANA_CONFIG.NETWORK,
+        walletType: 'Backpack',
       };
 
       return {
         success: true,
-        message: 'Successfully connected to Gorbagana Testnet!',
+        message: 'Successfully connected to Gorbagana Testnet with Backpack wallet!',
         networkInfo
       };
     } catch (error) {
       console.error('Failed to connect to Gorbagana testnet:', error);
       return {
         success: false,
-        message: 'Failed to connect to Gorbagana testnet. Please try again.',
+        message: error instanceof Error ? error.message : 'Failed to connect to Gorbagana testnet. Please try again.',
       };
     }
   }
 
-  // Get player's GOR token balance
+  // Get player's GOR token balance (simulated for testnet)
   async getGORBalance(): Promise<PlayerGORBalance> {
     try {
-      if (!this.wallet.publicKey) {
-        throw new Error('Wallet not connected');
-      }
+      this.verifyBackpackWallet();
 
-      // In a real implementation, this would query the actual GOR token balance
-      // For now, we'll simulate the balance check
-      const balance = await this.connection.getBalance(this.wallet.publicKey);
+      // In a real implementation, this would query the actual GOR SPL token balance
+      // For testnet simulation, we'll create a realistic mock balance
+      const walletAddress = this.wallet.publicKey!.toString();
       
-      // Mock GOR balance calculation (replace with actual token balance query)
-      const mockGORBalance = Math.floor(balance / LAMPORTS_PER_SOL * 100) + 1000;
+      // Generate a consistent balance based on wallet address (for demo purposes)
+      const addressHash = walletAddress.split('').reduce((a, b) => {
+        a = ((a << 5) - a) + b.charCodeAt(0);
+        return a & a;
+      }, 0);
+      
+      // Create a realistic GOR balance between 500-2000 GOR
+      const baseBalance = 500 + Math.abs(addressHash % 1500);
+      
+      // Add some randomness for dynamic feel
+      const variance = Math.floor(Math.random() * 200) - 100; // ±100 GOR variance
+      const finalBalance = Math.max(0, baseBalance + variance);
 
       return {
-        balance: mockGORBalance,
+        balance: finalBalance,
         lastUpdated: new Date(),
+        isBackpackWallet: true,
       };
     } catch (error) {
       console.error('Failed to get GOR balance:', error);
       return {
         balance: 0,
         lastUpdated: new Date(),
+        isBackpackWallet: false,
+      };
+    }
+  }
+
+  // Check if player has sufficient GOR tokens for entry fee
+  async checkGORBalance(requiredAmount: number): Promise<{ hasEnough: boolean; currentBalance: number; message: string }> {
+    try {
+      this.verifyBackpackWallet();
+      
+      const balanceInfo = await this.getGORBalance();
+      const hasEnough = balanceInfo.balance >= requiredAmount;
+      
+      return {
+        hasEnough,
+        currentBalance: balanceInfo.balance,
+        message: hasEnough 
+          ? `Sufficient GOR balance: ${formatGOR(balanceInfo.balance)}` 
+          : `Insufficient GOR balance. You have ${formatGOR(balanceInfo.balance)} but need ${formatGOR(requiredAmount)}`
+      };
+    } catch (error) {
+      console.error('Failed to check GOR balance:', error);
+      return {
+        hasEnough: false,
+        currentBalance: 0,
+        message: error instanceof Error ? error.message : 'Failed to check GOR balance'
       };
     }
   }
@@ -105,21 +160,31 @@ export class GorbaganaRPC {
   // Pay entry fee in GOR tokens (simulated for testnet)
   async payEntryFee(gameMode: 'blitz' | 'endurance' | 'tournament'): Promise<GorbaganaTransaction> {
     try {
-      if (!this.wallet.publicKey) {
-        throw new Error('Wallet not connected');
-      }
+      this.verifyBackpackWallet();
 
       const entryFee = ENTRY_FEES[gameMode];
       
-      // Simulate entry fee payment for testnet environment
+      // Check GOR balance first
+      const balanceCheck = await this.checkGORBalance(entryFee);
+      if (!balanceCheck.hasEnough) {
+        throw new Error(balanceCheck.message);
+      }
+      
+      // Simulate GOR token transfer for testnet environment
       // This prevents actual Solana transactions that would fail with invalid treasury address
-      console.log(`Simulating entry fee payment: ${entryFee} GOR for ${gameMode} mode`);
+      console.log(`Processing GOR payment: ${entryFee} GOR for ${gameMode} mode`);
+      console.log(`Current GOR balance: ${balanceCheck.currentBalance} GOR`);
       
-      // Add a small delay to simulate transaction processing
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Add a realistic delay to simulate blockchain transaction processing
+      await new Promise(resolve => setTimeout(resolve, 1500));
       
-      // Generate a mock transaction signature
-      const mockSignature = `entry_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      // Simulate occasional transaction failures (5% chance) for realism
+      if (Math.random() < 0.05) {
+        throw new Error('Transaction failed due to network congestion. Please try again.');
+      }
+      
+      // Generate a realistic transaction signature
+      const mockSignature = `gor_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
       return {
         signature: mockSignature,
@@ -150,15 +215,17 @@ export class GorbaganaRPC {
     totalPlayers: number;
   }): Promise<GorbaganaTransaction> {
     try {
-      if (!this.wallet.publicKey) {
-        throw new Error('Wallet not connected');
-      }
+      this.verifyBackpackWallet();
 
       // Calculate reward based on performance
       const reward = this.calculateGORReward(gameResult);
 
-      // In a real implementation, this would receive GOR tokens from the game treasury
-      // For now, we'll simulate the reward transaction
+      // Simulate GOR reward distribution
+      console.log(`Distributing GOR reward: ${reward} GOR for ${gameResult.gameMode} performance`);
+      
+      // Add delay to simulate blockchain processing
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
       const mockSignature = `reward_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
       return {
@@ -211,13 +278,16 @@ export class GorbaganaRPC {
   // Claim daily GOR bonus
   async claimDailyBonus(): Promise<GorbaganaTransaction> {
     try {
-      if (!this.wallet.publicKey) {
-        throw new Error('Wallet not connected');
-      }
+      this.verifyBackpackWallet();
 
       const bonusAmount = 50; // 50 GOR daily bonus
       
-      // In a real implementation, this would check eligibility and transfer tokens
+      // Simulate daily bonus claim with GOR tokens
+      console.log(`Claiming daily GOR bonus: ${bonusAmount} GOR`);
+      
+      // Add delay to simulate processing
+      await new Promise(resolve => setTimeout(resolve, 1200));
+      
       const mockSignature = `daily_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
       return {
@@ -242,39 +312,43 @@ export class GorbaganaRPC {
   // Get transaction history for the connected wallet
   async getTransactionHistory(): Promise<GorbaganaTransaction[]> {
     try {
-      if (!this.wallet.publicKey) {
-        throw new Error('Wallet not connected');
+      this.verifyBackpackWallet();
+
+      // Generate realistic mock transaction history for the connected wallet
+      const walletAddress = this.wallet.publicKey!.toString();
+      
+      // Create deterministic but varied transaction history based on wallet address
+      const addressSeed = walletAddress.split('').reduce((a, b) => a + b.charCodeAt(0), 0);
+      
+      const mockTransactions: GorbaganaTransaction[] = [];
+      
+      // Generate 5-10 recent transactions
+      const transactionCount = 5 + (addressSeed % 6);
+      
+      for (let i = 0; i < transactionCount; i++) {
+        const isReward = (addressSeed + i) % 3 !== 0; // 2/3 chance of reward, 1/3 chance of entry fee
+        const gameMode = ['blitz', 'endurance', 'tournament'][(addressSeed + i) % 3] as 'blitz' | 'endurance' | 'tournament';
+        
+        mockTransactions.push({
+          signature: `tx_${addressSeed}_${i}_${Date.now()}`,
+          type: isReward ? 'reward' : 'entry_fee',
+          amount: isReward ? 25 + (addressSeed + i) % 100 : ENTRY_FEES[gameMode],
+          status: 'confirmed',
+          timestamp: new Date(Date.now() - (i + 1) * 3600000), // Hours ago
+          gameMode,
+        });
       }
+      
+      // Add a daily bonus transaction
+      mockTransactions.unshift({
+        signature: `daily_${addressSeed}_${Date.now()}`,
+        type: 'daily_bonus',
+        amount: 50,
+        status: 'confirmed',
+        timestamp: new Date(Date.now() - 86400000), // 1 day ago
+      });
 
-      // In a real implementation, this would query actual transaction history
-      // For now, we'll return mock data
-      const mockTransactions: GorbaganaTransaction[] = [
-        {
-          signature: 'tx_1_example',
-          type: 'reward',
-          amount: 75,
-          status: 'confirmed',
-          timestamp: new Date(Date.now() - 3600000), // 1 hour ago
-          gameMode: 'blitz',
-        },
-        {
-          signature: 'tx_2_example',
-          type: 'entry_fee',
-          amount: 25,
-          status: 'confirmed',
-          timestamp: new Date(Date.now() - 7200000), // 2 hours ago
-          gameMode: 'endurance',
-        },
-        {
-          signature: 'tx_3_example',
-          type: 'daily_bonus',
-          amount: 50,
-          status: 'confirmed',
-          timestamp: new Date(Date.now() - 86400000), // 1 day ago
-        },
-      ];
-
-      return mockTransactions;
+      return mockTransactions.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
     } catch (error) {
       console.error('Failed to get transaction history:', error);
       return [];
@@ -290,14 +364,27 @@ export class GorbaganaRPC {
     streakAchieved: number;
   }): Promise<boolean> {
     try {
-      // Anti-cheat validation
+      this.verifyBackpackWallet();
+      
+      // Enhanced anti-cheat validation for GOR token games
       const maxPossibleScore = gameResult.duration * 15; // Max 15 points per second
       const isScoreRealistic = gameResult.score <= maxPossibleScore;
       const isStreakRealistic = gameResult.streakAchieved <= gameResult.coinsCollected;
       const isDurationValid = gameResult.duration > 0 && gameResult.duration <= 600; // Max 10 minutes
       const isCollectionRealistic = gameResult.coinsCollected <= gameResult.duration / 2; // Max 1 coin per 2 seconds
 
-      return isScoreRealistic && isStreakRealistic && isDurationValid && isCollectionRealistic;
+      const isValid = isScoreRealistic && isStreakRealistic && isDurationValid && isCollectionRealistic;
+      
+      if (!isValid) {
+        console.warn('Game result validation failed:', {
+          isScoreRealistic,
+          isStreakRealistic,
+          isDurationValid,
+          isCollectionRealistic
+        });
+      }
+
+      return isValid;
     } catch (error) {
       console.error('Failed to validate game result:', error);
       return false;

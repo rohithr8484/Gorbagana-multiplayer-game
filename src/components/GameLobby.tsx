@@ -2,18 +2,20 @@ import React, { useState, useEffect } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import { useGame } from '../contexts/GameContext';
-import { Play, Users, Coins, Zap, Trophy, Clock, Star, Shield, Target, TrendingUp, Gift, ExternalLink } from 'lucide-react';
+import { Play, Users, Coins, Zap, Trophy, Clock, Star, Shield, Target, TrendingUp, Gift, ExternalLink, AlertCircle } from 'lucide-react';
 import GorbaganaIntegration from './GorbaganaIntegration';
 import { GorbaganaRPC, getEntryFee, estimateRewards, formatGOR } from '../utils/gorbaganaRPC';
 
 const GameLobby: React.FC = () => {
-  const { connected, publicKey } = useWallet();
-  const wallet = useWallet();
+  const { connected, publicKey, wallet } = useWallet();
+  const walletContext = useWallet();
   const { setCurrentScreen, gameState, setGameState } = useGame();
   const [playerCount, setPlayerCount] = useState(0);
   const [gorBalance, setGorBalance] = useState(1000);
   const [showGorbaganaModal, setShowGorbaganaModal] = useState(false);
   const [gorbaganaRPC, setGorbaganaRPC] = useState<GorbaganaRPC | null>(null);
+  const [isBackpackWallet, setIsBackpackWallet] = useState(false);
+  const [balanceLoading, setBalanceLoading] = useState(false);
   const [gameStats, setGameStats] = useState({
     gamesPlayed: 23,
     coinsCollected: 1847,
@@ -31,12 +33,18 @@ const GameLobby: React.FC = () => {
 
   useEffect(() => {
     // Initialize Gorbagana RPC when wallet connects
-    if (connected && publicKey) {
-      const rpc = new GorbaganaRPC(wallet);
-      setGorbaganaRPC(rpc);
-      loadGORBalance(rpc);
+    if (connected && publicKey && wallet) {
+      // Check if connected wallet is Backpack
+      const isBackpack = wallet.adapter.name === 'Backpack';
+      setIsBackpackWallet(isBackpack);
+      
+      if (isBackpack) {
+        const rpc = new GorbaganaRPC(walletContext);
+        setGorbaganaRPC(rpc);
+        loadGORBalance(rpc);
+      }
     }
-  }, [connected, publicKey, wallet]);
+  }, [connected, publicKey, wallet, walletContext]);
 
   useEffect(() => {
     // Simulate real-time player count updates
@@ -71,50 +79,63 @@ const GameLobby: React.FC = () => {
 
   const loadGORBalance = async (rpc: GorbaganaRPC) => {
     try {
+      setBalanceLoading(true);
       const balance = await rpc.getGORBalance();
       setGorBalance(balance.balance);
     } catch (error) {
       console.error('Failed to load GOR balance:', error);
+    } finally {
+      setBalanceLoading(false);
     }
   };
 
   const startGame = async (mode: string, isFree: boolean = false) => {
-    if (connected) {
-      const gameMode = mode as 'blitz' | 'endurance' | 'tournament';
-      
-      // For free games (Quick Match), skip entry fee processing
-      if (isFree) {
-        setGameState({ ...gameState, isPlaying: true, gameMode: gameMode as any });
-        setCurrentScreen('game');
-        return;
-      }
+    if (!connected) {
+      alert('Please connect your Backpack wallet first.');
+      return;
+    }
 
-      // For paid games, process entry fee
-      if (gorbaganaRPC) {
-        const entryFee = getEntryFee(gameMode);
+    if (!isBackpackWallet) {
+      alert('Please connect using Backpack wallet only for GOR token functionality.');
+      return;
+    }
+
+    const gameMode = mode as 'blitz' | 'endurance' | 'tournament';
+    
+    // For free games (Quick Match), skip entry fee processing
+    if (isFree) {
+      setGameState({ ...gameState, isPlaying: true, gameMode: gameMode as any });
+      setCurrentScreen('game');
+      return;
+    }
+
+    // For paid games, process GOR token entry fee
+    if (gorbaganaRPC) {
+      const entryFee = getEntryFee(gameMode);
+      
+      try {
+        // Check GOR balance first
+        const balanceCheck = await gorbaganaRPC.checkGORBalance(entryFee);
         
-        // Check if player has enough GOR
-        if (gorBalance < entryFee) {
-          alert(`Insufficient GOR balance. You need ${formatGOR(entryFee)} to play this mode.`);
+        if (!balanceCheck.hasEnough) {
+          alert(`Insufficient GOR tokens. ${balanceCheck.message}`);
           return;
         }
 
-        try {
-          // Pay entry fee
-          const transaction = await gorbaganaRPC.payEntryFee(gameMode);
-          
-          if (transaction.status === 'confirmed') {
-            // Update balance and start game
-            await loadGORBalance(gorbaganaRPC);
-            setGameState({ ...gameState, isPlaying: true, gameMode: gameMode as any });
-            setCurrentScreen('game');
-          } else {
-            alert('Failed to process entry fee. Please try again.');
-          }
-        } catch (error) {
-          console.error('Failed to start game:', error);
-          alert('Failed to start game. Please try again.');
+        // Pay entry fee in GOR tokens
+        const transaction = await gorbaganaRPC.payEntryFee(gameMode);
+        
+        if (transaction.status === 'confirmed') {
+          // Update balance and start game
+          await loadGORBalance(gorbaganaRPC);
+          setGameState({ ...gameState, isPlaying: true, gameMode: gameMode as any });
+          setCurrentScreen('game');
+        } else {
+          alert('Failed to process GOR token entry fee. Please try again.');
         }
+      } catch (error) {
+        console.error('Failed to start game:', error);
+        alert(`Failed to start game: ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
     }
   };
@@ -124,15 +145,15 @@ const GameLobby: React.FC = () => {
   };
 
   const GameModeCard = ({ title, description, entryFee, reward, icon: Icon, duration, features, onClick, gameMode, isFree = false }: any) => {
-    const canAfford = isFree || gorBalance >= entryFee;
+    const canAfford = isFree || (isBackpackWallet && gorBalance >= entryFee);
     const rewardRange = estimateRewards(gameMode);
     
     return (
       <div 
         className={`bg-white/5 backdrop-blur-md border border-white/10 rounded-xl p-6 hover:bg-white/10 transition-all cursor-pointer group transform hover:scale-105 ${
-          !canAfford ? 'opacity-60' : ''
+          !canAfford && !isFree ? 'opacity-60' : ''
         }`}
-        onClick={canAfford ? onClick : undefined}
+        onClick={canAfford || isFree ? onClick : undefined}
       >
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-3">
@@ -172,13 +193,13 @@ const GameLobby: React.FC = () => {
           </span>
           <button 
             className={`px-4 py-2 rounded-lg font-medium transition-all group-hover:scale-105 ${
-              canAfford 
+              canAfford || isFree
                 ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:from-purple-700 hover:to-blue-700' 
                 : 'bg-gray-600 text-gray-300 cursor-not-allowed'
             }`}
-            disabled={!canAfford}
+            disabled={!canAfford && !isFree}
           >
-            {canAfford ? 'Join Game' : 'Insufficient GOR'}
+            {isFree ? 'Play Free' : canAfford ? 'Join Game' : 'Insufficient GOR'}
           </button>
         </div>
       </div>
@@ -190,6 +211,21 @@ const GameLobby: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Main Game Area */}
         <div className="lg:col-span-2 space-y-6">
+          {/* Wallet Status Alert */}
+          {connected && !isBackpackWallet && (
+            <div className="bg-red-600/20 border border-red-400/30 rounded-xl p-4 mb-6">
+              <div className="flex items-center space-x-3">
+                <AlertCircle className="w-6 h-6 text-red-400" />
+                <div>
+                  <h3 className="text-red-400 font-bold">Backpack Wallet Required</h3>
+                  <p className="text-gray-300 text-sm">
+                    Please connect using Backpack wallet to access GOR token functionality and paid game modes.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Welcome Section */}
           <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-xl p-8">
             <div className="text-center">
@@ -197,12 +233,12 @@ const GameLobby: React.FC = () => {
                 Welcome to <span className="bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent">GOR Rush</span>
               </h2>
               <p className="text-gray-300 text-lg mb-6">
-                The ultimate multiplayer coin collection experience on Gorbagana testnet. Compete, collect, and earn real GOR coins!
+                The ultimate multiplayer coin collection experience on Gorbagana testnet. Compete, collect, and earn real GOR tokens!
               </p>
               
               {!connected ? (
                 <div className="space-y-4">
-                  <p className="text-yellow-400 font-medium">Connect your Backpack wallet to start earning GOR coins</p>
+                  <p className="text-yellow-400 font-medium">Connect your Backpack wallet to start earning GOR tokens</p>
                   <WalletMultiButton className="!bg-gradient-to-r !from-purple-600 !to-blue-600 hover:!from-purple-700 hover:!to-blue-700 !rounded-lg !font-bold !px-8 !py-3" />
                   <div className="text-sm text-gray-400 mt-4">
                     <p>🎮 Play games • 🏆 Earn GOR • 📈 Climb leaderboards</p>
@@ -212,7 +248,9 @@ const GameLobby: React.FC = () => {
                 <div className="space-y-4">
                   <div className="flex items-center justify-center space-x-4 text-green-400">
                     <Zap className="w-5 h-5" />
-                    <span>Wallet Connected: {publicKey?.toString().slice(0, 8)}...</span>
+                    <span>
+                      {isBackpackWallet ? 'Backpack Wallet Connected' : 'Wallet Connected'}: {publicKey?.toString().slice(0, 8)}...
+                    </span>
                   </div>
                   <div className="flex justify-center space-x-4">
                     <button
@@ -270,8 +308,8 @@ const GameLobby: React.FC = () => {
               reward={150}
               icon={Clock}
               gameMode="endurance"
-              features={['Scaling difficulty', 'Special coins', 'Shield protection']}
-              onClick={connected ? () => startGame('endurance') : undefined}
+              features={['Scaling difficulty', 'Special coins', 'Shield protection', 'GOR ENTRY FEE']}
+              onClick={() => startGame('endurance')}
             />
             
             <GameModeCard
@@ -282,8 +320,8 @@ const GameLobby: React.FC = () => {
               reward={500}
               icon={Trophy}
               gameMode="tournament"
-              features={['Elimination rounds', 'Live spectating', 'Champion rewards']}
-              onClick={connected ? () => startGame('tournament') : undefined}
+              features={['Elimination rounds', 'Live spectating', 'Champion rewards', 'GOR ENTRY FEE']}
+              onClick={() => startGame('tournament')}
             />
           </div>
 
@@ -334,7 +372,18 @@ const GameLobby: React.FC = () => {
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
                   <span className="text-gray-300">GOR Balance</span>
-                  <span className="text-yellow-400 font-bold text-lg">{formatGOR(gorBalance)}</span>
+                  <div className="flex items-center space-x-2">
+                    {balanceLoading && <div className="w-4 h-4 border-2 border-yellow-400 border-t-transparent rounded-full animate-spin"></div>}
+                    <span className={`font-bold text-lg ${isBackpackWallet ? 'text-yellow-400' : 'text-gray-500'}`}>
+                      {isBackpackWallet ? formatGOR(gorBalance) : 'N/A'}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-300">Wallet Type</span>
+                  <span className={`font-bold ${isBackpackWallet ? 'text-green-400' : 'text-orange-400'}`}>
+                    {isBackpackWallet ? 'Backpack ✓' : 'Other Wallet'}
+                  </span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-gray-300">Games Played</span>
