@@ -6,7 +6,7 @@ export const GORBAGANA_CONFIG = {
   RPC_ENDPOINT: 'https://api.testnet.solana.com', // Updated to use valid Solana testnet RPC
   NETWORK: 'testnet',
   GOR_TOKEN_MINT: 'GORTokenMintAddressHere', // Replace with actual GOR token mint address
-  GAME_TREASURY: 'GameTreasuryAddressHere', // Replace with actual treasury address
+  GAME_TREASURY: '11111111111111111111111111111112', // Valid Solana system program address for testnet
 };
 
 // Game Entry Fees in GOR tokens
