@@ -55,6 +55,7 @@ const GameArena: React.FC = () => {
   const gameAreaRef = useRef<HTMLDivElement>(null);
   const animationRef = useRef<number>();
   const tokenGenerationRef = useRef<NodeJS.Timeout>();
+  const multiTokenGenerationRef = useRef<NodeJS.Timeout>();
 
   // Start game countdown
   useEffect(() => {
@@ -74,14 +75,12 @@ const GameArena: React.FC = () => {
     
     const gameArea = gameAreaRef.current.getBoundingClientRect();
     const tokenTypes = [
-      { value: 1, color: 'bg-yellow-400', type: 'normal', weight: 40, size: 40 },
-      { value: 5, color: 'bg-blue-400', type: 'normal', weight: 25, size: 45 },
-      { value: 10, color: 'bg-purple-400', type: 'bonus', weight: 15, size: 50 },
-      { value: 25, color: 'bg-red-400', type: 'bonus', weight: 8, size: 55 },
-      { value: 0, color: 'bg-green-400', type: 'multiplier', weight: 5, size: 45 },
-      { value: -10, color: 'bg-gray-800', type: 'bomb', weight: 4, size: 40 },
-      { value: 0, color: 'bg-cyan-400', type: 'shield', weight: 2, size: 45 },
-      { value: 0, color: 'bg-orange-400', type: 'time', weight: 1, size: 45 },
+      { value: 1, color: 'bg-yellow-400', type: 'normal', weight: 50, size: 40 },
+      { value: 5, color: 'bg-blue-400', type: 'normal', weight: 30, size: 45 },
+      { value: 10, color: 'bg-purple-400', type: 'bonus', weight: 12, size: 50 },
+      { value: 25, color: 'bg-red-400', type: 'bonus', weight: 5, size: 55 },
+      { value: 0, color: 'bg-green-400', type: 'multiplier', weight: 2, size: 45 },
+      { value: -10, color: 'bg-gray-800', type: 'bomb', weight: 1, size: 40 },
     ];
     
     const totalWeight = tokenTypes.reduce((sum, type) => sum + type.weight, 0);
@@ -101,7 +100,7 @@ const GameArena: React.FC = () => {
       x: Math.random() * (gameArea.width - selectedType.size),
       y: -selectedType.size,
       value: selectedType.value,
-      speed: Math.random() * 3 + 2, // Increased speed range: 2-5 pixels per frame
+      speed: Math.random() * 4 + 3, // Increased speed: 3-7 pixels per frame
       color: selectedType.color,
       type: selectedType.type as any,
       size: selectedType.size,
@@ -111,6 +110,17 @@ const GameArena: React.FC = () => {
     
     setTokens(prev => [...prev, newToken]);
   }, [gameStarted, gameActive]);
+
+  // Generate multiple tokens at once for more action
+  const generateMultipleTokens = useCallback(() => {
+    if (!gameStarted || !gameActive) return;
+    
+    // Generate 2-4 tokens at once for more exciting gameplay
+    const tokenCount = Math.floor(Math.random() * 3) + 2;
+    for (let i = 0; i < tokenCount; i++) {
+      setTimeout(() => generateToken(), i * 100); // Stagger slightly
+    }
+  }, [generateToken, gameStarted, gameActive]);
 
   // Enhanced token click handling with power-ups and combos
   const handleTokenClick = (tokenId: string) => {
@@ -239,7 +249,7 @@ const GameArena: React.FC = () => {
     setPlayers(prev => prev.map(player => {
       if (player.id !== '1') {
         // Simulate more realistic AI behavior
-        const baseIncrease = Math.random() < 0.08 ? Math.floor(Math.random() * 8) + 1 : 0;
+        const baseIncrease = Math.random() < 0.12 ? Math.floor(Math.random() * 8) + 1 : 0;
         const streakBonus = player.streak > 5 ? Math.floor(baseIncrease * 1.5) : baseIncrease;
         const multiplierBonus = Math.floor(streakBonus * player.multiplier);
         
@@ -307,11 +317,11 @@ const GameArena: React.FC = () => {
     };
   }, [gameActive, gameStarted, updateTokens, updateParticles]);
 
-  // Enhanced token generation with difficulty scaling
+  // Primary token generation - frequent single tokens
   useEffect(() => {
     if (!gameActive || !gameStarted) return;
 
-    const baseInterval = Math.max(300, 800 - (60 - timeLeft) * 8); // Gets faster over time, starts at 800ms
+    const baseInterval = Math.max(150, 400 - (60 - timeLeft) * 5); // Much faster: 150-400ms
     
     tokenGenerationRef.current = setInterval(() => {
       generateToken();
@@ -323,6 +333,23 @@ const GameArena: React.FC = () => {
       }
     };
   }, [gameActive, gameStarted, generateToken, timeLeft]);
+
+  // Secondary token generation - occasional bursts
+  useEffect(() => {
+    if (!gameActive || !gameStarted) return;
+
+    const burstInterval = Math.max(800, 1500 - (60 - timeLeft) * 10); // Burst every 0.8-1.5 seconds
+    
+    multiTokenGenerationRef.current = setInterval(() => {
+      generateMultipleTokens();
+    }, burstInterval);
+
+    return () => {
+      if (multiTokenGenerationRef.current) {
+        clearInterval(multiTokenGenerationRef.current);
+      }
+    };
+  }, [gameActive, gameStarted, generateMultipleTokens, timeLeft]);
 
   // Timer
   useEffect(() => {
@@ -434,6 +461,7 @@ const GameArena: React.FC = () => {
             <p className="text-2xl text-gray-300">Get Ready!</p>
             <div className="mt-8 text-lg text-gray-400">
               <p>Click the falling GOR tokens to collect them!</p>
+              <p className="text-sm mt-2 text-yellow-400">More tokens = Higher scores!</p>
             </div>
           </div>
         </div>
