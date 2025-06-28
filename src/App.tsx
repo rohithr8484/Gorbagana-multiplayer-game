@@ -4,13 +4,13 @@ import { WalletModalProvider } from '@solana/wallet-adapter-react-ui';
 import { BackpackWalletAdapter } from '@solana/wallet-adapter-backpack';
 import { clusterApiUrl } from '@solana/web3.js';
 import { useWallet } from '@solana/wallet-adapter-react';
-import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
+import { WalletMultiButton, WalletDisconnectButton } from '@solana/wallet-adapter-react-ui';
 import WalletContextProvider from './components/WalletContextProvider';
 import GameLobby from './components/GameLobby';
 import GameArena from './components/GameArena';
 import Leaderboard from './components/Leaderboard';
 import { GameProvider, useGame } from './contexts/GameContext';
-import { Coins, Trophy, Users, Wallet, Zap, Shield, Star } from 'lucide-react';
+import { Coins, Trophy, Users, Wallet, Zap, Shield, Star, LogOut } from 'lucide-react';
 
 // Import wallet adapter CSS
 import '@solana/wallet-adapter-react-ui/styles.css';
@@ -151,7 +151,19 @@ const WalletConnectionGate: React.FC<{ children: React.ReactNode }> = ({ childre
 
 function AppContent() {
   const { gameState, currentScreen, setCurrentScreen } = useGame();
-  const { connected, publicKey } = useWallet();
+  const { connected, publicKey, disconnect } = useWallet();
+
+  const handleDisconnect = async () => {
+    try {
+      if (disconnect) {
+        await disconnect();
+        // Reset to lobby screen after disconnect
+        setCurrentScreen('lobby');
+      }
+    } catch (error) {
+      console.error('Failed to disconnect wallet:', error);
+    }
+  };
 
   const renderCurrentScreen = () => {
     switch (currentScreen) {
@@ -224,7 +236,21 @@ function AppContent() {
                 <Trophy className="w-4 h-4 inline mr-2" />
                 Leaderboard
               </button>
-              <WalletMultiButton className="!bg-gradient-to-r !from-green-600 !to-emerald-600 hover:!from-green-700 hover:!to-emerald-700 !rounded-lg !font-medium !px-4 !py-2" />
+              
+              {/* Wallet Connection/Disconnection */}
+              <div className="flex items-center space-x-2">
+                {connected ? (
+                  <button
+                    onClick={handleDisconnect}
+                    className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white rounded-lg font-medium transition-all"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    <span>Disconnect</span>
+                  </button>
+                ) : (
+                  <WalletMultiButton className="!bg-gradient-to-r !from-green-600 !to-emerald-600 hover:!from-green-700 hover:!to-emerald-700 !rounded-lg !font-medium !px-4 !py-2" />
+                )}
+              </div>
             </nav>
           </div>
         </header>
